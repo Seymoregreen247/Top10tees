@@ -689,6 +689,9 @@ input,button,select{font-family:'Barlow Condensed','Arial Narrow',Arial,sans-ser
 .order-send-status{font-size:11px;margin-top:8px;min-height:16px;color:#666;text-align:center}
 @media(max-width:600px){.customer-fields{grid-template-columns:1fr}.customer-field.full{grid-column:auto}}
 
+
+#save-btn.saving,#admin-save-bot.saving{background:#777!important;cursor:wait!important}
+.cloud-ok{color:#176b2c!important}.cloud-warn{color:#9a5b00!important}.cloud-error{color:#b00020!important}
 </style>
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjEwIiBmaWxsPSIjMDAyODY4Ii8+PHRleHQgeD0iMzIiIHk9IjI1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtd2VpZ2h0PSI5MDAiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIj5UT1A8L3RleHQ+PHRleHQgeD0iMzIiIHk9IjQ5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtd2VpZ2h0PSI5MDAiIGZvbnQtc2l6ZT0iMzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiPjEwPC90ZXh0Pjwvc3ZnPg=="/>
 </head>
@@ -721,6 +724,11 @@ input,button,select{font-family:'Barlow Condensed','Arial Narrow',Arial,sans-ser
     </div>
   </div>
   <div id="admin-body">
+  <div id="cloud-admin-status" style="margin-bottom:18px;padding:12px 14px;background:#eef5ff;border-left:4px solid #002868;font-size:11px;line-height:1.6;color:#234">
+    <b>CLOUD MANAGE:</b> Ready for Netlify storage. Upload pictures, then click <b>Save &amp; Publish</b>.
+    <span id="cloud-status-text" style="display:block;color:#687086;margin-top:3px">Checking cloud connection…</span>
+  </div>
+
 
 
     <!-- SALES DASHBOARD -->
@@ -2160,15 +2168,152 @@ function buildAdminSlots(){
   });
 }
 
-function saveAdmin(){
+
+// ── NETLIFY CLOUD CONTENT ───────────────────────────────────────────
+// Product settings are stored in Netlify Blobs through server functions.
+// The admin key is never written into this HTML or GitHub.
+var CLOUD_CONFIG_URL="/.netlify/functions/site-config";
+var CLOUD_SAVE_URL="/.netlify/functions/site-config-save";
+var CLOUD_UPLOAD_URL="/.netlify/functions/media-upload";
+var cloudConnected=false;
+
+function setCloudStatus(message,state){
+  var el=document.getElementById("cloud-status-text");
+  if(!el)return;
+  el.textContent=message;
+  el.className=state==="ok"?"cloud-ok":state==="error"?"cloud-error":"cloud-warn";
+}
+
+function getCloudAdminKey(){
+  var key=sessionStorage.getItem("t10_cloud_admin_key")||"";
+  if(!key){
+    key=prompt("Enter your private Cloud Manage Key. This must match ADMIN_API_KEY in Netlify.")||"";
+    if(key)sessionStorage.setItem("t10_cloud_admin_key",key);
+  }
+  return key;
+}
+
+async function cloudRequest(url,options){
+  var res=await fetch(url,options||{});
+  var data={};
+  try{data=await res.json();}catch(e){}
+  if(!res.ok)throw new Error(data.error||("Cloud request failed: "+res.status));
+  return data;
+}
+
+async function loadCloudConfig(){
+  try{
+    var res=await fetch(CLOUD_CONFIG_URL,{cache:"no-store"});
+    if(res.status===404){
+      setCloudStatus("Cloud storage is empty. Your first Save & Publish will create it.","warn");
+      return false;
+    }
+    if(!res.ok)throw new Error("Cloud read failed: "+res.status);
+    var cfg=await res.json();
+    if(cfg&&cfg.tees){
+      tees=cfg.tees;
+      prices=cfg.prices||prices;
+      security=cfg.security||security;
+      sneakers=cfg.sneakers||[];
+      gallery=cfg.gallery||[];
+      payHandles=cfg.payHandles||payHandles;
+      payQRs=cfg.payQRs||payQRs;
+      shippingCost=Number(cfg.shippingCost||shippingCost);
+      persist();persistExtra();saveSneakers();
+    }
+    cloudConnected=true;
+    setCloudStatus("Connected. Live content loaded from Netlify cloud storage.","ok");
+    return true;
+  }catch(err){
+    console.warn(err);
+    setCloudStatus("Cloud unavailable. Showing the local backup until Netlify Functions are deployed.","warn");
+    return false;
+  }
+}
+
+async function cloudUploadDataURL(dataURL,category,index){
+  if(!dataURL||dataURL.indexOf("data:")!==0)return dataURL;
+  var key=getCloudAdminKey();
+  if(!key)throw new Error("Cloud Manage Key is required.");
+  var result=await cloudRequest(CLOUD_UPLOAD_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json","X-Admin-Key":key},
+    body:JSON.stringify({dataUrl:dataURL,category:category,index:index})
+  });
+  return result.url;
+}
+
+async function uploadAllPendingImages(){
+  var tasks=[];
+  adminImages.forEach(function(img,i){
+    if(img&&img.indexOf("data:")===0)tasks.push(
+      cloudUploadDataURL(img,"tee",i).then(function(url){adminImages[i]=url;tees[i].image=url;})
+    );
+  });
+  adminSneakers.forEach(function(s,i){
+    if(s.image&&s.image.indexOf("data:")===0)tasks.push(
+      cloudUploadDataURL(s.image,"sneaker",i).then(function(url){s.image=url;})
+    );
+  });
+  adminGallery.forEach(function(g,i){
+    if(g.image&&g.image.indexOf("data:")===0)tasks.push(
+      cloudUploadDataURL(g.image,"gallery",i).then(function(url){g.image=url;})
+    );
+  });
+  Object.keys(adminPayQRs||{}).forEach(function(method){
+    var img=adminPayQRs[method];
+    if(img&&img.indexOf("data:")===0)tasks.push(
+      cloudUploadDataURL(img,"payment-"+method,0).then(function(url){adminPayQRs[method]=url;})
+    );
+  });
+  for(var i=0;i<tasks.length;i++)await tasks[i];
+}
+
+function buildCloudConfig(){
+  return {
+    version:1,
+    updatedAt:new Date().toISOString(),
+    tees:tees,
+    prices:prices,
+    security:security,
+    sneakers:sneakers,
+    gallery:gallery,
+    payHandles:payHandles,
+    payQRs:payQRs,
+    shippingCost:shippingCost
+  };
+}
+
+async function saveCloudConfig(){
+  var key=getCloudAdminKey();
+  if(!key)throw new Error("Cloud Manage Key is required.");
+  return cloudRequest(CLOUD_SAVE_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json","X-Admin-Key":key},
+    body:JSON.stringify(buildCloudConfig())
+  });
+}
+
+async function saveAdmin(){
   security=pendingSec||security;
   if(security==="watermark"){ localStorage.setItem("t10_watermark","on"); security="none"; } else { localStorage.removeItem("t10_watermark"); }
   prices.ls=parseInt(document.getElementById("p-ls").value)||5;
   prices.rs=parseInt(document.getElementById("p-rs").value)||5;
   prices.bk=parseInt(document.getElementById("p-bk").value)||10;
   document.querySelectorAll("#slot-grid-admin input[data-field='name']").forEach(function(inp){ tees[parseInt(inp.dataset.idx)].name=inp.value; });
-  document.querySelectorAll("#slot-grid-admin input[data-field='price']").forEach(function(inp){ tees[parseInt(inp.dataset.idx)].price=parseInt(inp.value)||25; });
+  document.querySelectorAll("#slot-grid-admin input[data-field='price']").forEach(function(inp){ tees[parseInt(inp.dataset.idx)].price=parseInt(inp.value)||30; });
   document.querySelectorAll("#slot-grid-admin .tog-track").forEach(function(track,i){ tees[i].live=track.dataset.live==="1"; });
+  var saveButtons=[document.getElementById("save-btn"),document.getElementById("admin-save-bot")];
+  saveButtons.forEach(function(b){if(b){b.classList.add("saving");b.disabled=true;b.dataset.oldText=b.textContent;b.textContent="SAVING TO CLOUD…";}});
+  setCloudStatus("Uploading new images and saving live content…","warn");
+  try{
+    await uploadAllPendingImages();
+  }catch(uploadErr){
+    saveButtons.forEach(function(b){if(b){b.classList.remove("saving");b.disabled=false;b.textContent=b.dataset.oldText||"SAVE & PUBLISH";}});
+    setCloudStatus(uploadErr.message,"error");
+    alert("Cloud image upload failed: "+uploadErr.message);
+    return;
+  }
   adminImages.forEach(function(img,i){ tees[i].image=img; });
   // Save sneakers
   adminSneakers.forEach(function(snk,i){
@@ -2202,6 +2347,17 @@ function saveAdmin(){
   payQRs=Object.assign({},adminPayQRs);
   shippingCost=parseFloat(document.getElementById("shipping-cost").value)||6;
   persist(); persistExtra();
+  try{
+    await saveCloudConfig();
+    cloudConnected=true;
+    setCloudStatus("Saved. All visitors will now see these updates.","ok");
+  }catch(saveErr){
+    saveButtons.forEach(function(b){if(b){b.classList.remove("saving");b.disabled=false;b.textContent=b.dataset.oldText||"SAVE & PUBLISH";}});
+    setCloudStatus(saveErr.message,"error");
+    alert("The local backup was saved, but cloud publishing failed: "+saveErr.message);
+    return;
+  }
+  saveButtons.forEach(function(b){if(b){b.classList.remove("saving");b.disabled=false;b.textContent=b.dataset.oldText||"SAVE & PUBLISH";}});
   applyHandlers(security);
   selIdx=null;
   document.getElementById("order-panel").classList.remove("show");
@@ -2324,9 +2480,11 @@ function buildAdminGallery(){
       inp.addEventListener("change",function(e){
         var file=e.target.files[0]; if(!file) return;
         var reader=new FileReader(); reader.onload=function(ev){
-          adminGallery[idx].image=ev.target.result;
-          pr.innerHTML='<img src="'+ev.target.result+'" style="width:100%;height:100%;object-fit:cover"/>';
-          lbl.textContent="CHANGE PHOTO"; rm.style.display="block";
+          compressImage(ev.target.result,function(compressed){
+            adminGallery[idx].image=compressed;
+            pr.innerHTML='<img src="'+compressed+'" style="width:100%;height:100%;object-fit:cover"/>';
+            lbl.textContent="CHANGE PHOTO"; rm.style.display="block";
+          },900,0.82,true);
         }; reader.readAsDataURL(file);
       });
       rm.addEventListener("click",function(){
@@ -2813,7 +2971,7 @@ function matchSneakerPhoto(input){
     var img=new Image(); img.onload=function(){averageImageColor(img,function(rgb){
       var family=colorName(rgb), live=tees.map(function(t,i){return {t:t,i:i}}).filter(function(x){return x.t.live});
       var picks=live.slice().sort(function(a,b){
-        function score(x){var q=(x.t.name||'').toLowerCase();return q.indexOf(family.split('/')[0])>=0?0:Math.abs((x.t.price||25)-25)}
+        function score(x){var q=(x.t.name||'').toLowerCase();return q.indexOf(family.split('/')[0])>=0?0:Math.abs((x.t.price||30)-30)}
         return score(a)-score(b);
       }).slice(0,3);
       var html='<img src="'+e.target.result+'" alt="Sneaker preview"/><div class="match-result"><b>Dominant color: '+family.toUpperCase()+'</b><br/>';
@@ -2849,15 +3007,19 @@ function openPayMe(method){
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────
-loadAll(); loadExtra(); loadSneakers();
-buildWatermark();
-applyHandlers(security);
-renderSlots();
-renderCart();
-renderGallery();
-selectFulfillment("pickup");
-updateDashboard();
-initShopQR();
+async function bootTop10Tees(){
+  loadAll(); loadExtra(); loadSneakers();
+  await loadCloudConfig();
+  buildWatermark();
+  applyHandlers(security);
+  renderSlots();
+  renderCart();
+  renderGallery();
+  selectFulfillment("pickup");
+  updateDashboard();
+  initShopQR();
+}
+bootTop10Tees();
 
 document.addEventListener("keydown",function(e){
   const card=e.target.closest&&e.target.closest(".it-btn");
