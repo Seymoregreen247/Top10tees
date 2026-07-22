@@ -285,39 +285,16 @@
       const msg=document.getElementById("shipping-save-msg");
       if(isNaN(value)||value<0){if(msg)msg.textContent="Enter a valid amount.";return}
       SHIPPING_PRICE=value;
-      try{
-        await window.storage.set("shipping-price",String(value),true);
-        if(msg)msg.textContent="Saved — shipping is now "+money(value)+" for every visitor.";
-      }catch(e){console.error("Could not save shipping price",e);if(msg)msg.textContent="Saved for this session, but couldn't sync — try again."}
+      const ok=await saveSettings();
+      if(msg)msg.textContent=ok?("Saved — shipping is now "+money(value)+" for every visitor."):"Saved for this session, but couldn't sync — check your connection and try again.";
       renderCheckout();
-    }
-    async function loadShippingPrice(){
-      try{
-        const result=await window.storage.get("shipping-price",true);
-        if(result&&result.value!==undefined&&result.value!==null&&result.value!=="")SHIPPING_PRICE=parseFloat(result.value)
-      }catch(e){/* no saved shipping price yet, use default */}
     }
     function moveProduct(productId,delta){
       const idx=PRODUCTS.findIndex(p=>p.id===productId);
       const newIdx=idx+delta;
       if(newIdx<0||newIdx>=PRODUCTS.length)return;
       [PRODUCTS[idx],PRODUCTS[newIdx]]=[PRODUCTS[newIdx],PRODUCTS[idx]];
-      saveOrder();renderManageBody();renderProducts();
-    }
-    async function saveOrder(){
-      try{await window.storage.set("top10-order",JSON.stringify(PRODUCTS.map(p=>p.id)),true)}catch(e){console.error("Could not save order",e)}
-    }
-    async function loadStoredOrder(){
-      try{
-        const result=await window.storage.get("top10-order",true);
-        if(result&&result.value){
-          const order=JSON.parse(result.value);
-          const byId=Object.fromEntries(PRODUCTS.map(p=>[p.id,p]));
-          const reordered=order.map(id=>byId[id]).filter(Boolean);
-          PRODUCTS.forEach(p=>{if(!reordered.includes(p))reordered.push(p)});
-          PRODUCTS.length=0;PRODUCTS.push(...reordered);
-        }
-      }catch(e){/* no saved order yet, use default */}
+      saveSettings();renderManageBody();renderProducts();
     }
     function uploadToGallery(input){
       const files=Array.from(input.files||[]);if(!files.length)return;
@@ -327,10 +304,7 @@
           const id="g"+Date.now()+Math.random().toString(36).slice(2,7);
           const item={id,name:file.name.replace(/\.[a-z0-9]+$/i,""),dataUrl:reader.result};
           gallery.push(item);
-          try{
-            await window.storage.set(`gallery-photo:${id}`,JSON.stringify(item),true);
-            await saveGalleryIndex();
-          }catch(e){console.error("Could not save gallery photo",e)}
+          await saveSettings();
           renderManageBody();
         };
         reader.onerror=()=>alert(`Could not read "${file.name}". Please try another file.`);
@@ -340,31 +314,15 @@
     }
     async function removeFromGallery(id){
       gallery=gallery.filter(g=>g.id!==id);
-      try{await window.storage.delete(`gallery-photo:${id}`,true);await saveGalleryIndex()}catch(e){console.error("Could not remove gallery photo",e)}
+      await saveSettings();
       renderManageBody();
     }
     async function assignGalleryPhoto(galleryId,productId){
       const item=gallery.find(g=>g.id===galleryId);const product=PRODUCTS.find(p=>p.id===productId);
       if(!item||!product)return;
       product.image=item.dataUrl;
-      try{await window.storage.set(`top10-photo:${productId}`,item.dataUrl,true)}catch(e){console.error("Could not assign gallery photo",e)}
+      await saveSettings();
       renderManageBody();renderProducts();
-    }
-    async function saveGalleryIndex(){
-      try{await window.storage.set("gallery-index",JSON.stringify(gallery.map(g=>g.id)),true)}catch(e){console.error("Could not save gallery index",e)}
-    }
-    async function loadGallery(){
-      try{
-        const result=await window.storage.get("gallery-index",true);
-        if(!result||!result.value)return;
-        const ids=JSON.parse(result.value);
-        const loaded=[];
-        for(const id of ids){
-          try{const item=await window.storage.get(`gallery-photo:${id}`,true);if(item&&item.value)loaded.push(JSON.parse(item.value))}
-          catch(e){/* photo missing, skip */}
-        }
-        gallery=loaded;
-      }catch(e){/* no gallery yet */}
     }
     function checkPin(){
       const val=document.getElementById("manage-pin")?.value.trim();
@@ -378,7 +336,7 @@
         const dataUrl=reader.result;
         const product=PRODUCTS.find(p=>p.id===productId);if(!product)return;
         product.image=dataUrl;
-        try{await window.storage.set(`top10-photo:${productId}`,dataUrl,true)}catch(e){console.error("Could not save photo",e)}
+        await saveSettings();
         renderManageBody();renderProducts();
       };
       reader.onerror=()=>alert("Could not read that photo. Please try another file.");
@@ -387,19 +345,44 @@
     async function removePhoto(productId){
       const product=PRODUCTS.find(p=>p.id===productId);if(!product)return;
       product.image="";
-      try{await window.storage.delete(`top10-photo:${productId}`,true)}catch(e){console.error("Could not remove photo",e)}
+      await saveSettings();
       renderManageBody();renderProducts();
     }
-    async function loadStoredPhotos(){
-      for(const p of PRODUCTS){
-        try{const result=await window.storage.get(`top10-photo:${p.id}`,true);if(result&&result.value)p.image=result.value}
-        catch(e){/* no saved photo for this design yet */}
-      }
+    /* ---- Settings persistence via the same Google Sheets Apps Script webhook ---- */
+    async function saveSettings(){
+      if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return false;
+      const settings={
+        productOrder:PRODUCTS.map(p=>p.id),
+        photos:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.image||""])),
+        gallery,
+        shippingPrice:SHIPPING_PRICE
+      };
+      try{
+        await fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"settings",settings})});
+        return true;
+      }catch(e){console.error("Could not save settings to Google Sheets",e);return false}
+    }
+    async function loadSettings(){
+      if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return;
+      try{
+        const res=await fetch(`${GOOGLE_SHEETS_WEBHOOK_URL}?type=settings`);
+        const settings=await res.json();
+        if(!settings||!Object.keys(settings).length)return;
+        if(Array.isArray(settings.productOrder)){
+          const byId=Object.fromEntries(PRODUCTS.map(p=>[p.id,p]));
+          const reordered=settings.productOrder.map(id=>byId[id]).filter(Boolean);
+          PRODUCTS.forEach(p=>{if(!reordered.includes(p))reordered.push(p)});
+          PRODUCTS.length=0;PRODUCTS.push(...reordered);
+        }
+        if(settings.photos){PRODUCTS.forEach(p=>{if(settings.photos[p.id])p.image=settings.photos[p.id]})}
+        if(Array.isArray(settings.gallery))gallery=settings.gallery;
+        if(typeof settings.shippingPrice==="number")SHIPPING_PRICE=settings.shippingPrice;
+      }catch(e){console.error("Could not load settings from Google Sheets",e)}
     }
     document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeOverlay(o.id)}));
     document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>closeOverlay(o.id))});
     document.addEventListener("contextmenu",e=>{if(e.target.closest(".art-wrap,.modal-art"))e.preventDefault()});
-    (async()=>{await loadStoredOrder();await loadStoredPhotos();await loadGallery();await loadShippingPrice();renderProducts();updateCartCount()})();
+    (async()=>{await loadSettings();renderProducts();updateCartCount()})();
   </script>
 </body>
 </html>
