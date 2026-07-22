@@ -85,7 +85,7 @@
        ================================================================ */
     const PAYPAL_CLIENT_ID = "Ac-tFRf-vY5MpKPRp-Fri1xVv2CgCCBZWpbxiS3O3SM-zOxpRPuiyOuVfQNMKnNOK3W-03xPfXs3sKMC";
     const CURRENCY = "USD";
-    const SHIPPING_PRICE = 6;
+    let SHIPPING_PRICE = 10;
     /* Paste your Google Apps Script Web App URL here once deployed (see top10-tees-sheets-webhook.gs) */
     const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxLrsn92tpuUI1uLx8a_5vmD2WAomD_a1SSWlQi4DfzAfTdVM6xzoko1yuREFz7HmSi/exec";
 
@@ -219,11 +219,12 @@
         pinInput.addEventListener("keydown",e=>{if(e.key==="Enter")checkPin()});
         return;
       }
-      const tabs=`<div style="display:flex;gap:8px;margin-bottom:18px">
+      const tabs=`<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
         <button class="choice ${manageView==='designs'?'on':''}" onclick="switchManageView('designs')">TOP 10 DESIGNS</button>
         <button class="choice ${manageView==='gallery'?'on':''}" onclick="switchManageView('gallery')">PHOTO GALLERY</button>
+        <button class="choice ${manageView==='shipping'?'on':''}" onclick="switchManageView('shipping')">SHIPPING</button>
       </div>`;
-      body.innerHTML=tabs+(manageView==="designs"?renderDesignsTab():renderGalleryTab());
+      body.innerHTML=tabs+(manageView==="designs"?renderDesignsTab():manageView==="gallery"?renderGalleryTab():renderShippingTab());
     }
     function switchManageView(view){manageView=view;renderManageBody()}
     function renderDesignsTab(){
@@ -253,6 +254,36 @@
             <button class="choice" style="width:100%;font-size:10px" onclick="removeFromGallery('${g.id}')">REMOVE</button>
           </div>`).join(""):`<div class="section-note">No photos in the gallery yet — add some above.</div>`}
       </div>`;
+    }
+    function renderShippingTab(){
+      return `<div class="section-note" style="margin-bottom:18px">Set the shipping cost charged at checkout. Pickup in Roslindale always stays free. This updates for every visitor as soon as you save.</div>
+      <div style="max-width:260px">
+        <div class="choice-title" style="margin-top:0">SHIPPING COST</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-weight:900;font-size:20px">$</span>
+          <input id="shipping-price-input" type="number" min="0" step="0.5" value="${SHIPPING_PRICE}" style="width:100px;border:2px solid var(--navy);padding:8px;font-size:20px;font-weight:900;text-align:center">
+        </div>
+        <button class="add-bag" onclick="saveShippingPrice()">SAVE SHIPPING PRICE</button>
+        <div id="shipping-save-msg" style="font-size:11px;color:var(--muted);margin-top:10px"></div>
+      </div>`;
+    }
+    async function saveShippingPrice(){
+      const input=document.getElementById("shipping-price-input");
+      const value=parseFloat(input.value);
+      const msg=document.getElementById("shipping-save-msg");
+      if(isNaN(value)||value<0){if(msg)msg.textContent="Enter a valid amount.";return}
+      SHIPPING_PRICE=value;
+      try{
+        await window.storage.set("shipping-price",String(value),true);
+        if(msg)msg.textContent="Saved — shipping is now "+money(value)+" for every visitor.";
+      }catch(e){console.error("Could not save shipping price",e);if(msg)msg.textContent="Saved for this session, but couldn't sync — try again."}
+      renderCheckout();
+    }
+    async function loadShippingPrice(){
+      try{
+        const result=await window.storage.get("shipping-price",true);
+        if(result&&result.value!==undefined&&result.value!==null&&result.value!=="")SHIPPING_PRICE=parseFloat(result.value)
+      }catch(e){/* no saved shipping price yet, use default */}
     }
     function moveProduct(productId,delta){
       const idx=PRODUCTS.findIndex(p=>p.id===productId);
@@ -356,7 +387,7 @@
     document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeOverlay(o.id)}));
     document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>closeOverlay(o.id))});
     document.addEventListener("contextmenu",e=>{if(e.target.closest(".art-wrap,.modal-art"))e.preventDefault()});
-    (async()=>{await loadStoredOrder();await loadStoredPhotos();await loadGallery();renderProducts();updateCartCount()})();
+    (async()=>{await loadStoredOrder();await loadStoredPhotos();await loadGallery();await loadShippingPrice();renderProducts();updateCartCount()})();
   </script>
 </body>
 </html>
