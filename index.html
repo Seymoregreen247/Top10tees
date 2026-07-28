@@ -240,7 +240,8 @@
     }
     function switchManageView(view){manageView=view;renderManageBody()}
     function renderDesignsTab(){
-      return `<div class="section-note" style="margin-bottom:18px">Upload a photo, pick from your gallery, or use the arrows to rearrange the order designs appear on the site. It saves automatically for every visitor.</div>`+PRODUCTS.map((p,i)=>`
+      return `<div class="section-note" style="margin-bottom:14px">Upload a photo, pick from your gallery, or use the arrows to rearrange order. Edit any name or price below, then hit <b>SAVE & GO LIVE</b> — that's the button that actually pushes everything to every visitor.</div>
+      <div style="margin-bottom:18px"><button class="add-bag" onclick="saveAllDesigns()">SAVE &amp; GO LIVE</button><span id="designs-save-msg" style="font-size:12px;color:var(--muted);margin-left:12px"></span></div>`+PRODUCTS.map((p,i)=>`
         <div style="display:grid;grid-template-columns:auto 90px 1fr auto;gap:14px;align-items:center;border-bottom:1px solid var(--line);padding:14px 0">
           <div style="display:flex;flex-direction:column;gap:4px">
             <button class="choice" style="padding:4px 8px" onclick="moveProduct('${p.id}',-1)" ${i===0?"disabled":""}>▲</button>
@@ -249,10 +250,10 @@
           <img src="${productArt(p,i)}" alt="" style="width:90px;height:90px;object-fit:contain;background:#f4f6fa">
           <div>
             <div style="font:900 11px Inter,sans-serif;letter-spacing:1px;color:var(--muted);margin-bottom:4px">NO. ${String(i+1).padStart(2,"0")}</div>
-            <input value="${escapeXml(p.name)}" onchange="updateProductField('${p.id}','name',this.value)" style="width:100%;max-width:260px;border:1px solid var(--line);padding:6px 8px;font:900 14px Barlow Condensed,sans-serif;color:var(--navy);margin-bottom:6px">
+            <input id="name-input-${p.id}" value="${escapeXml(p.name)}" style="width:100%;max-width:260px;border:1px solid var(--line);padding:6px 8px;font:900 14px Barlow Condensed,sans-serif;color:var(--navy);margin-bottom:6px">
             <div style="display:flex;align-items:center;gap:6px">
               <span style="font-weight:900">$</span>
-              <input type="number" min="0" step="0.5" value="${p.price}" onchange="updateProductField('${p.id}','price',this.value)" style="width:80px;border:1px solid var(--line);padding:6px 8px;font-weight:800">
+              <input id="price-input-${p.id}" type="number" min="0" step="0.5" value="${p.price}" style="width:80px;border:1px solid var(--line);padding:6px 8px;font-weight:800">
             </div>
             <div id="manage-status-${p.id}" style="font-size:11px;color:var(--muted);margin-top:4px">${p.image?"Custom photo uploaded":"Using placeholder art"}</div>
           </div>
@@ -350,21 +351,28 @@
       reader.onerror=()=>alert("Could not read that photo. Please try another file.");
       reader.readAsDataURL(file);
     }
-    async function updateProductField(productId,field,rawValue){
-      const product=PRODUCTS.find(p=>p.id===productId);if(!product)return;
-      const status=document.getElementById(`manage-status-${productId}`);
-      if(field==="price"){
-        const value=parseFloat(rawValue);
-        if(isNaN(value)||value<0){if(status)status.textContent="Enter a valid price.";return}
-        product.price=value;
-      }else if(field==="name"){
-        const value=String(rawValue).trim();
-        if(!value){if(status)status.textContent="Name can't be blank.";return}
-        product.name=value;
-      }else return;
+    async function saveAllDesigns(){
+      const msg=document.getElementById("designs-save-msg");
+      if(msg)msg.textContent="Saving…";
+      let hadError=false;
+      PRODUCTS.forEach(p=>{
+        const nameInput=document.getElementById(`name-input-${p.id}`);
+        const priceInput=document.getElementById(`price-input-${p.id}`);
+        if(nameInput){
+          const v=nameInput.value.trim();
+          if(v)p.name=v; else hadError=true;
+        }
+        if(priceInput){
+          const v=parseFloat(priceInput.value);
+          if(!isNaN(v)&&v>=0)p.price=v; else hadError=true;
+        }
+      });
       const ok=await saveSettings();
       renderProducts();
-      if(status)status.textContent=ok?"Saved — updated for every visitor.":(product.image?"Custom photo uploaded":"Using placeholder art")+" • couldn't sync, check connection";
+      if(msg){
+        if(hadError)msg.textContent="Saved what was valid — check for any blank names or bad prices.";
+        else msg.textContent=ok?"Live — every visitor now sees these changes.":"Saved on this device, but couldn't reach Google Sheets — check your connection and try SAVE & GO LIVE again.";
+      }
     }
     async function removePhoto(productId){
       const product=PRODUCTS.find(p=>p.id===productId);if(!product)return;
