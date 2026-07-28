@@ -305,33 +305,80 @@
       [PRODUCTS[idx],PRODUCTS[newIdx]]=[PRODUCTS[newIdx],PRODUCTS[idx]];
       saveSettings();renderManageBody();renderProducts();
     }
+    function compressImage(file,opts){
+      opts=opts||{};
+      const maxCharsTarget=opts.maxChars||42000;
+      return new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>{
+          const img=new Image();
+          img.onload=()=>{
+            let dim=800,q=0.75,tries=0;
+            function attempt(){
+              const scale=Math.min(1,dim/Math.max(img.width,img.height));
+              const cw=Math.max(1,Math.round(img.width*scale)),ch=Math.max(1,Math.round(img.height*scale));
+              const canvas=document.createElement("canvas");
+              canvas.width=cw;canvas.height=ch;
+              const ctx=canvas.getContext("2d");
+              ctx.fillStyle="#ffffff";ctx.fillRect(0,0,cw,ch);
+              ctx.drawImage(img,0,0,cw,ch);
+              const dataUrl=canvas.toDataURL("image/jpeg",q);
+              tries++;
+              if(dataUrl.length<=maxCharsTarget||tries>=7){resolve(dataUrl)}
+              else{q=Math.max(0.3,q-0.12);dim=Math.max(280,dim-120);attempt()}
+            }
+            attempt();
+          };
+          img.onerror=()=>reject(new Error("Could not read image"));
+          img.src=reader.result;
+        };
+        reader.onerror=()=>reject(new Error("Could not read file"));
+        reader.readAsDataURL(file);
+      });
+    }
+    async function savePhoto(key,dataUrl){
+      if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return false;
+      try{
+        await fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"photo",key,dataUrl})});
+        return true;
+      }catch(e){console.error("Could not save photo",e);return false}
+    }
+    async function loadPhotos(){
+      if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return;
+      try{
+        const res=await fetch(`${GOOGLE_SHEETS_WEBHOOK_URL}?type=photos`);
+        const photos=await res.json();
+        if(!photos||typeof photos!=="object")return;
+        PRODUCTS.forEach(p=>{if(photos[p.id])p.image=photos[p.id]});
+        gallery.forEach(g=>{if(photos[g.id])g.dataUrl=photos[g.id]});
+      }catch(e){console.error("Could not load photos from Google Sheets",e)}
+    }
     function uploadToGallery(input){
       const files=Array.from(input.files||[]);if(!files.length)return;
       files.forEach(file=>{
-        const reader=new FileReader();
-        reader.onload=async()=>{
+        compressImage(file).then(async dataUrl=>{
           const id="g"+Date.now()+Math.random().toString(36).slice(2,7);
-          const item={id,name:file.name.replace(/\.[a-z0-9]+$/i,""),dataUrl:reader.result};
+          const item={id,name:file.name.replace(/\.[a-z0-9]+$/i,""),dataUrl};
           gallery.push(item);
-          await saveSettings();
           renderManageBody();
-        };
-        reader.onerror=()=>alert(`Could not read "${file.name}". Please try another file.`);
-        reader.readAsDataURL(file);
+          await savePhoto(id,dataUrl);
+          await saveSettings();
+        }).catch(()=>alert(`Could not read "${file.name}". Please try another file.`));
       });
       input.value="";
     }
     async function removeFromGallery(id){
       gallery=gallery.filter(g=>g.id!==id);
       await saveSettings();
+      await savePhoto(id,"");
       renderManageBody();
     }
     async function assignGalleryPhoto(galleryId,productId){
       const item=gallery.find(g=>g.id===galleryId);const product=PRODUCTS.find(p=>p.id===productId);
       if(!item||!product)return;
       product.image=item.dataUrl;
-      await saveSettings();
       renderManageBody();renderProducts();
+      await savePhoto(productId,item.dataUrl);
     }
     function checkPin(){
       const val=document.getElementById("manage-pin")?.value.trim();
@@ -340,16 +387,16 @@
     }
     function uploadPhoto(productId,input){
       const file=input.files&&input.files[0];if(!file)return;
-      const reader=new FileReader();
-      reader.onload=async()=>{
-        const dataUrl=reader.result;
+      const status=document.getElementById(`manage-status-${productId}`);
+      if(status)status.textContent="Compressing & uploading…";
+      compressImage(file).then(async dataUrl=>{
         const product=PRODUCTS.find(p=>p.id===productId);if(!product)return;
         product.image=dataUrl;
-        await saveSettings();
         renderManageBody();renderProducts();
-      };
-      reader.onerror=()=>alert("Could not read that photo. Please try another file.");
-      reader.readAsDataURL(file);
+        const ok=await savePhoto(productId,dataUrl);
+        const st=document.getElementById(`manage-status-${productId}`);
+        if(st)st.textContent=ok?"Custom photo uploaded — live for every visitor.":"Uploaded on this device, but couldn't sync — check connection and try again.";
+      }).catch(()=>alert("Could not read that photo. Please try another file."));
     }
     async function saveAllDesigns(){
       const msg=document.getElementById("designs-save-msg");
@@ -377,18 +424,17 @@
     async function removePhoto(productId){
       const product=PRODUCTS.find(p=>p.id===productId);if(!product)return;
       product.image="";
-      await saveSettings();
       renderManageBody();renderProducts();
+      await savePhoto(productId,"");
     }
     /* ---- Settings persistence via the same Google Sheets Apps Script webhook ---- */
     async function saveSettings(){
       if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return false;
       const settings={
         productOrder:PRODUCTS.map(p=>p.id),
-        photos:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.image||""])),
         prices:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.price])),
         names:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.name])),
-        gallery,
+        gallery:gallery.map(g=>({id:g.id,name:g.name})),
         shippingPrice:SHIPPING_PRICE
       };
       try{
@@ -408,17 +454,16 @@
           PRODUCTS.forEach(p=>{if(!reordered.includes(p))reordered.push(p)});
           PRODUCTS.length=0;PRODUCTS.push(...reordered);
         }
-        if(settings.photos){PRODUCTS.forEach(p=>{if(settings.photos[p.id])p.image=settings.photos[p.id]})}
         if(settings.prices){PRODUCTS.forEach(p=>{if(typeof settings.prices[p.id]==="number")p.price=settings.prices[p.id]})}
         if(settings.names){PRODUCTS.forEach(p=>{if(settings.names[p.id])p.name=settings.names[p.id]})}
-        if(Array.isArray(settings.gallery))gallery=settings.gallery;
+        if(Array.isArray(settings.gallery))gallery=settings.gallery.map(g=>({id:g.id,name:g.name,dataUrl:""}));
         if(typeof settings.shippingPrice==="number")SHIPPING_PRICE=settings.shippingPrice;
       }catch(e){console.error("Could not load settings from Google Sheets",e)}
     }
     document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeOverlay(o.id)}));
     document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>closeOverlay(o.id))});
     document.addEventListener("contextmenu",e=>{if(e.target.closest(".art-wrap,.modal-art"))e.preventDefault()});
-    (async()=>{await loadSettings();renderProducts();updateCartCount()})();
+    (async()=>{await loadSettings();await loadPhotos();renderProducts();updateCartCount()})();
   </script>
 </body>
 </html>
