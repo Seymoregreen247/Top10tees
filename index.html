@@ -109,16 +109,16 @@
        a data:image/... URL. These records do not use localStorage.
        ================================================================ */
     const PRODUCTS = [
-      {id:"T1001",name:"TOP TEN DESIGN 01",tag:"Top 10 Exclusive",price:30,accent:"#d71936",image:""},
-      {id:"T1002",name:"TOP TEN DESIGN 02",tag:"Top 10 Exclusive",price:30,accent:"#0f4c9a",image:""},
-      {id:"T1003",name:"TOP TEN DESIGN 03",tag:"Top 10 Exclusive",price:30,accent:"#16804a",image:""},
-      {id:"T1004",name:"TOP TEN DESIGN 04",tag:"Top 10 Exclusive",price:30,accent:"#6c2a83",image:""},
-      {id:"T1005",name:"TOP TEN DESIGN 05",tag:"Top 10 Exclusive",price:30,accent:"#ef8b1e",image:""},
-      {id:"T1006",name:"TOP TEN DESIGN 06",tag:"Top 10 Exclusive",price:30,accent:"#10131a",image:""},
-      {id:"T1007",name:"TOP TEN DESIGN 07",tag:"Top 10 Exclusive",price:30,accent:"#a6132b",image:""},
-      {id:"T1008",name:"TOP TEN DESIGN 08",tag:"Top 10 Exclusive",price:30,accent:"#0d7180",image:""},
-      {id:"T1009",name:"TOP TEN DESIGN 09",tag:"Top 10 Exclusive",price:30,accent:"#8a6820",image:""},
-      {id:"T1010",name:"TOP TEN DESIGN 10",tag:"Top 10 Exclusive",price:30,accent:"#071d49",image:""}
+      {id:"T1001",name:"TOP TEN DESIGN 01",tag:"Top 10 Exclusive",price:30,accent:"#d71936",image:"",colors:["Black","White","Navy","Gray"]},
+      {id:"T1002",name:"TOP TEN DESIGN 02",tag:"Top 10 Exclusive",price:30,accent:"#0f4c9a",image:"",colors:["Black","White","Navy","Gray"]},
+      {id:"T1003",name:"TOP TEN DESIGN 03",tag:"Top 10 Exclusive",price:30,accent:"#16804a",image:"",colors:["Black","White","Navy","Gray"]},
+      {id:"T1004",name:"TOP TEN DESIGN 04",tag:"Top 10 Exclusive",price:30,accent:"#6c2a83",image:"",colors:["Black","White","Navy","Gray"]},
+      {id:"T1005",name:"TOP TEN DESIGN 05",tag:"Top 10 Exclusive",price:30,accent:"#ef8b1e",image:"",colors:["Black","White","Navy","Gray"]},
+      {id:"T1006",name:"TOP TEN DESIGN 06",tag:"Top 10 Exclusive",price:30,accent:"#10131a",image:"",colors:["Black","White","Navy","Gray"]},
+      {id:"T1007",name:"TOP TEN DESIGN 07",tag:"Top 10 Exclusive",price:30,accent:"#a6132b",image:"",colors:["Black","White","Navy","Gray"]},
+      {id:"T1008",name:"TOP TEN DESIGN 08",tag:"Top 10 Exclusive",price:30,accent:"#0d7180",image:"",colors:["Black","White","Navy","Gray"]},
+      {id:"T1009",name:"TOP TEN DESIGN 09",tag:"Top 10 Exclusive",price:30,accent:"#8a6820",image:"",colors:["Black","White","Navy","Gray"]},
+      {id:"T1010",name:"TOP TEN DESIGN 10",tag:"Top 10 Exclusive",price:30,accent:"#071d49",image:"",colors:["Black","White","Navy","Gray"]}
     ];
 
     const SIZE_UPCHARGE={S:0,M:0,L:0,XL:0,"2XL":3,"3XL":3,"4XL":5,"5XL":5};
@@ -145,14 +145,14 @@
       document.getElementById("product-grid").innerHTML=PRODUCTS.map((p,i)=>`<article class="product-card"><div class="rank">NO. ${String(i+1).padStart(2,"0")}</div><div class="art-wrap" oncontextmenu="return false"><img src="${productArt(p,i)}" alt="${escapeXml(p.name)}">${watermark()}</div><div class="product-info"><div class="product-name">${escapeXml(p.name)}</div><div class="product-tag">${escapeXml(p.tag)}</div><div class="product-bottom"><div class="price">FROM ${money(p.price)}</div><button class="choose" onclick="chooseProduct(${i})">Choose</button></div></div></article>`).join("");
     }
     function chooseProduct(index){
-      current=PRODUCTS[index];selection={garment:"Tee",color:"Black",size:"L",qty:1,prints:[]};renderProductModal();openOverlay("product-overlay");
+      current=PRODUCTS[index];const firstColor=(current.colors&&current.colors.length?current.colors:COLORS)[0];selection={garment:"Tee",color:firstColor,size:"L",qty:1,prints:[]};renderProductModal();openOverlay("product-overlay");
     }
     function renderChoices(values,key){return values.map(v=>`<button class="choice ${selection[key]===v?'on':''}" onclick="setChoice('${key}','${v}')">${v}${key==='garment'&&GARMENTS[v]?` +${money(GARMENTS[v])}`:''}${key==='size'&&SIZE_UPCHARGE[v]?` +${money(SIZE_UPCHARGE[v])}`:''}</button>`).join("")}
     function renderPrintChoices(){return Object.keys(PRINTS).map(v=>`<button class="choice ${selection.prints.includes(v)?'on':''}" onclick="togglePrint('${v}')">${v} +${money(PRINTS[v])}</button>`).join("")}
     function togglePrint(value){const i=selection.prints.indexOf(value);if(i>-1)selection.prints.splice(i,1);else selection.prints.push(value);renderProductModal()}
     function renderProductModal(){
       const i=PRODUCTS.indexOf(current);
-      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art"><img src="${productArt(current,i)}" alt="${escapeXml(current.name)}">${watermark()}</div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><div class="choice-title">COLOR</div><div class="choices">${renderChoices(COLORS,'color')}</div><div class="choice-title">SIZE</div><div class="choices">${renderChoices(Object.keys(SIZE_UPCHARGE),'size')}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><strong>${selection.qty}</strong><button onclick="changeQty(1)">+</button></div><div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button></div></div>`;
+      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art"><img src="${productArt(current,i)}" alt="${escapeXml(current.name)}">${watermark()}</div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><div class="choice-title">COLOR</div><div class="choices">${renderChoices(current.colors&&current.colors.length?current.colors:COLORS,'color')}</div><div class="choice-title">SIZE</div><div class="choices">${renderChoices(Object.keys(SIZE_UPCHARGE),'size')}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><strong>${selection.qty}</strong><button onclick="changeQty(1)">+</button></div><div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button></div></div>`;
     }
     function setChoice(key,value){selection[key]=value;renderProductModal()}
     function changeQty(delta){selection.qty=Math.max(1,Math.min(12,selection.qty+delta));renderProductModal()}
@@ -288,6 +288,12 @@
               <input id="price-input-${p.id}" type="number" min="0" step="0.5" value="${p.price}" style="width:80px;border:1px solid var(--line);padding:6px 8px;font-weight:800">
             </div>
             <div id="manage-status-${p.id}" style="font-size:11px;color:var(--muted);margin-top:4px">${p.image?"Custom photo uploaded":"Using placeholder art"}</div>
+            <div style="margin-top:10px">
+              <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin-bottom:4px">AVAILABLE COLORS</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                ${COLORS.map(c=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" ${(p.colors||COLORS).includes(c)?"checked":""} onchange="toggleProductColor('${p.id}','${c}')">${c}</label>`).join("")}
+              </div>
+            </div>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
             <label class="choice" style="cursor:pointer">UPLOAD<input type="file" accept="image/*" style="display:none" onchange="uploadPhoto('${p.id}',this)"></label>
@@ -535,6 +541,19 @@
       renderManageBody();renderProducts();
       await savePhoto(productId,"");
     }
+    async function toggleProductColor(productId,color){
+      const product=PRODUCTS.find(p=>p.id===productId);if(!product)return;
+      if(!Array.isArray(product.colors)||!product.colors.length)product.colors=[...COLORS];
+      const idx=product.colors.indexOf(color);
+      if(idx>-1){
+        if(product.colors.length<=1){renderManageBody();alert("At least one color needs to stay available for this shirt.");return}
+        product.colors.splice(idx,1);
+      }else{
+        product.colors.push(color);
+      }
+      renderManageBody();
+      await saveSettings();
+    }
     /* ---- Settings persistence via the same Google Sheets Apps Script webhook ---- */
     async function saveSettings(){
       if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return false;
@@ -542,6 +561,7 @@
         productOrder:PRODUCTS.map(p=>p.id),
         prices:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.price])),
         names:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.name])),
+        colors:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.colors||COLORS])),
         gallery:gallery.map(g=>({id:g.id,name:g.name})),
         shippingPrice:SHIPPING_PRICE,
         freeShippingThreshold:FREE_SHIPPING_THRESHOLD,
@@ -566,6 +586,7 @@
         }
         if(settings.prices){PRODUCTS.forEach(p=>{if(typeof settings.prices[p.id]==="number")p.price=settings.prices[p.id]})}
         if(settings.names){PRODUCTS.forEach(p=>{if(settings.names[p.id])p.name=settings.names[p.id]})}
+        if(settings.colors){PRODUCTS.forEach(p=>{if(Array.isArray(settings.colors[p.id])&&settings.colors[p.id].length)p.colors=settings.colors[p.id]})}
         if(Array.isArray(settings.gallery))gallery=settings.gallery.map(g=>({id:g.id,name:g.name,dataUrl:""}));
         if(typeof settings.shippingPrice==="number")SHIPPING_PRICE=settings.shippingPrice;
         if(typeof settings.freeShippingThreshold==="number")FREE_SHIPPING_THRESHOLD=settings.freeShippingThreshold;
