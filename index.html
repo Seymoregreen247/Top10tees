@@ -99,6 +99,7 @@
     const PAYPAL_CLIENT_ID = "Ac-tFRf-vY5MpKPRp-Fri1xVv2CgCCBZWpbxiS3O3SM-zOxpRPuiyOuVfQNMKnNOK3W-03xPfXs3sKMC";
     const CURRENCY = "USD";
     let SHIPPING_PRICE = 10;
+    let FREE_SHIPPING_THRESHOLD = 99;
     /* Paste your Google Apps Script Web App URL here once deployed (see top10-tees-sheets-webhook.gs) */
     const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwI0xmYnrxFZggcOko8YMCY0J3MeF23JHBSgn7sIQasZ3YMsHCyrlfoVT-NAdB711vLKg/exec";
 
@@ -164,9 +165,9 @@
       const lines=document.getElementById("cart-lines"),footer=document.getElementById("cart-footer");
       if(!cart.length){lines.innerHTML='<div class="cart-empty">Your bag is empty.<br>Choose one of the Top 10.</div>';footer.innerHTML="";return}
       lines.innerHTML=cart.map((i,n)=>`<div class="cart-line"><img src="${i.image}" alt=""><div><div class="cart-line-name">${escapeXml(i.name)}</div><div class="cart-line-detail">${i.color} • Size ${i.size} • Qty ${i.qty}${i.prints&&i.prints.length?` • ${i.prints.join(", ")}`:""}</div><button class="remove" onclick="removeItem(${n})">REMOVE</button></div><strong>${money(i.total)}</strong></div>`).join("");
-      footer.innerHTML=`<div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div>${appliedDiscount?`<div class="summary-row"><span>Discount (${escapeXml(appliedDiscount.code)})</span><b style="color:var(--red)">-${money(discountAmount())}</b></div>`:""}<div class="summary-row"><span>Shipping</span><span>Calculated next</span></div><div class="summary-row total"><span>SUBTOTAL</span><span>${money(subtotal()-discountAmount())}</span></div></div><div style="display:flex;gap:8px;margin:12px 0 4px"><input id="cart-discount-input" placeholder="DISCOUNT CODE" style="flex:1;border:1px solid var(--line);padding:8px;text-transform:uppercase" value="${appliedDiscount?appliedDiscount.code:''}"><button class="choice" onclick="applyDiscountCode('cart-discount-input','cart-discount-msg')">${appliedDiscount?"REMOVE":"APPLY"}</button></div><div id="cart-discount-msg" style="font-size:11px;color:var(--muted);margin-bottom:10px"></div><button class="checkout" onclick="startCheckout()">CONTINUE TO PAYPAL</button>`;
+      footer.innerHTML=`<div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div>${appliedDiscount?`<div class="summary-row"><span>Discount (${escapeXml(appliedDiscount.code)})</span><b style="color:var(--red)">-${money(discountAmount())}</b></div>`:""}<div class="summary-row"><span>Shipping</span><span>${subtotal()>=FREE_SHIPPING_THRESHOLD?"FREE":"Calculated next"}</span></div><div class="summary-row total"><span>SUBTOTAL</span><span>${money(subtotal()-discountAmount())}</span></div></div>${subtotal()<FREE_SHIPPING_THRESHOLD?`<div class="section-note" style="margin:8px 0;color:var(--navy);font-weight:700">Add ${money(FREE_SHIPPING_THRESHOLD-subtotal())} more for FREE shipping!</div>`:`<div class="section-note" style="margin:8px 0;color:var(--navy);font-weight:700">You've unlocked FREE shipping 🎉</div>`}<div style="display:flex;gap:8px;margin:12px 0 4px"><input id="cart-discount-input" placeholder="DISCOUNT CODE" style="flex:1;border:1px solid var(--line);padding:8px;text-transform:uppercase" value="${appliedDiscount?appliedDiscount.code:''}"><button class="choice" onclick="applyDiscountCode('cart-discount-input','cart-discount-msg')">${appliedDiscount?"REMOVE":"APPLY"}</button></div><div id="cart-discount-msg" style="font-size:11px;color:var(--muted);margin-bottom:10px"></div><button class="checkout" onclick="startCheckout()">CONTINUE TO PAYPAL</button>`;
     }
-    function shippingFee(){return deliveryMethod==="shipping"?SHIPPING_PRICE:0}
+    function shippingFee(){if(deliveryMethod!=="shipping")return 0;return subtotal()>=FREE_SHIPPING_THRESHOLD?0:SHIPPING_PRICE}
     function discountAmount(){
       if(!appliedDiscount)return 0;
       const sub=subtotal();
@@ -194,9 +195,9 @@
     }
     function startCheckout(){deliveryMethod="shipping";closeOverlay("cart-overlay");renderCheckout();openOverlay("checkout-overlay");loadPayPal()}
     function renderCheckout(){
-      document.getElementById("checkout-body").innerHTML=`<div class="checkout-layout"><div><div class="field"><label>FULL NAME</label><input id="buyer-name" autocomplete="name"></div><div class="field"><label>EMAIL</label><input id="buyer-email" type="email" autocomplete="email"></div><div class="field"><label>PHONE</label><input id="buyer-phone" autocomplete="tel"></div><div class="field"><label>DELIVERY</label><select id="delivery" onchange="setDelivery(this.value)"><option value="shipping">Ship my order (+${money(SHIPPING_PRICE)})</option><option value="pickup">Pickup in Roslindale</option></select></div><div class="field" id="address-field"><label>SHIPPING ADDRESS</label><textarea id="buyer-address" rows="3" placeholder="Street, city, state and ZIP"></textarea></div></div><div><div class="paypal-panel"><div class="paypal-logo">PayPal</div><div class="paypal-message">Complete your order below.</div><div id="paypal-button-container"></div><div class="paypal-placeholder" id="paypal-placeholder">CHECKOUT COMING SOON</div></div><div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div><div class="summary-row" id="checkout-discount-row" style="${appliedDiscount?"":"display:none"}"><span>Discount${appliedDiscount?` (${escapeXml(appliedDiscount.code)})`:""}</span><b id="checkout-discount" style="color:var(--red)">-${money(discountAmount())}</b></div><div class="summary-row"><span>Shipping</span><b id="checkout-shipping">${money(shippingFee())}</b></div><div class="summary-row total"><span>TOTAL</span><span id="checkout-total">${money(grandTotal())}</span></div></div><div style="display:flex;gap:8px;margin:12px 0 4px"><input id="checkout-discount-input" placeholder="DISCOUNT CODE" style="flex:1;border:1px solid var(--line);padding:8px;text-transform:uppercase" value="${appliedDiscount?appliedDiscount.code:''}"><button class="choice" onclick="applyDiscountCode('checkout-discount-input','checkout-discount-msg')">${appliedDiscount?"REMOVE":"APPLY"}</button></div><div id="checkout-discount-msg" style="font-size:11px;color:var(--muted)"></div></div></div>`;
+      document.getElementById("checkout-body").innerHTML=`<div class="checkout-layout"><div><div class="field"><label>FULL NAME</label><input id="buyer-name" autocomplete="name"></div><div class="field"><label>EMAIL</label><input id="buyer-email" type="email" autocomplete="email"></div><div class="field"><label>PHONE</label><input id="buyer-phone" autocomplete="tel"></div><div class="field"><label>DELIVERY</label><select id="delivery" onchange="setDelivery(this.value)"><option value="shipping">Ship my order (+${money(SHIPPING_PRICE)})</option><option value="pickup">Pickup in Roslindale</option></select></div><div class="field" id="address-field"><label>SHIPPING ADDRESS</label><textarea id="buyer-address" rows="3" placeholder="Street, city, state and ZIP"></textarea></div></div><div><div class="paypal-panel"><div class="paypal-logo">PayPal</div><div class="paypal-message">Complete your order below.</div><div id="paypal-button-container"></div><div class="paypal-placeholder" id="paypal-placeholder">CHECKOUT COMING SOON</div></div><div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div><div class="summary-row" id="checkout-discount-row" style="${appliedDiscount?"":"display:none"}"><span>Discount${appliedDiscount?` (${escapeXml(appliedDiscount.code)})`:""}</span><b id="checkout-discount" style="color:var(--red)">-${money(discountAmount())}</b></div><div class="summary-row"><span>Shipping</span><b id="checkout-shipping">${shippingFee()===0&&deliveryMethod==="shipping"?"FREE":money(shippingFee())}</b></div><div class="summary-row total"><span>TOTAL</span><span id="checkout-total">${money(grandTotal())}</span></div></div><div style="display:flex;gap:8px;margin:12px 0 4px"><input id="checkout-discount-input" placeholder="DISCOUNT CODE" style="flex:1;border:1px solid var(--line);padding:8px;text-transform:uppercase" value="${appliedDiscount?appliedDiscount.code:''}"><button class="choice" onclick="applyDiscountCode('checkout-discount-input','checkout-discount-msg')">${appliedDiscount?"REMOVE":"APPLY"}</button></div><div id="checkout-discount-msg" style="font-size:11px;color:var(--muted)"></div></div></div>`;
     }
-    function setDelivery(value){deliveryMethod=value;const address=document.getElementById("address-field");if(address)address.classList.toggle("hidden",value==="pickup");const ship=document.getElementById("checkout-shipping"),total=document.getElementById("checkout-total");if(ship)ship.textContent=money(shippingFee());if(total)total.textContent=money(grandTotal())}
+    function setDelivery(value){deliveryMethod=value;const address=document.getElementById("address-field");if(address)address.classList.toggle("hidden",value==="pickup");const ship=document.getElementById("checkout-shipping"),total=document.getElementById("checkout-total");if(ship)ship.textContent=shippingFee()===0&&deliveryMethod==="shipping"?"FREE":money(shippingFee());if(total)total.textContent=money(grandTotal())}
     function validBuyer(){
       const name=document.getElementById("buyer-name"),email=document.getElementById("buyer-email"),phone=document.getElementById("buyer-phone"),address=document.getElementById("buyer-address");
       const fields=[name,email,phone];if(deliveryMethod==="shipping")fields.push(address);let ok=true;fields.forEach(f=>{if(!f||!f.value.trim()){if(f)f.style.borderColor="var(--red)";ok=false}else f.style.borderColor=""});
@@ -308,25 +309,34 @@
       </div>`;
     }
     function renderShippingTab(){
-      return `<div class="section-note" style="margin-bottom:18px">Set the shipping cost charged at checkout. Pickup in Roslindale always stays free. This updates for every visitor as soon as you save.</div>
-      <div style="max-width:260px">
+      return `<div class="section-note" style="margin-bottom:18px">Set the shipping cost charged at checkout, plus a free-shipping threshold. Pickup in Roslindale always stays free. This updates for every visitor as soon as you save.</div>
+      <div style="max-width:320px">
         <div class="choice-title" style="margin-top:0">SHIPPING COST</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px">
           <span style="font-weight:900;font-size:20px">$</span>
           <input id="shipping-price-input" type="number" min="0" step="0.5" value="${SHIPPING_PRICE}" style="width:100px;border:2px solid var(--navy);padding:8px;font-size:20px;font-weight:900;text-align:center">
         </div>
-        <button class="add-bag" onclick="saveShippingPrice()">SAVE SHIPPING PRICE</button>
+        <div class="choice-title" style="margin-top:0">FREE SHIPPING OVER</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-weight:900;font-size:20px">$</span>
+          <input id="free-shipping-input" type="number" min="0" step="1" value="${FREE_SHIPPING_THRESHOLD}" style="width:100px;border:2px solid var(--navy);padding:8px;font-size:20px;font-weight:900;text-align:center">
+        </div>
+        <button class="add-bag" onclick="saveShippingPrice()">SAVE SHIPPING SETTINGS</button>
         <div id="shipping-save-msg" style="font-size:11px;color:var(--muted);margin-top:10px"></div>
       </div>`;
     }
     async function saveShippingPrice(){
       const input=document.getElementById("shipping-price-input");
+      const freeInput=document.getElementById("free-shipping-input");
       const value=parseFloat(input.value);
+      const freeValue=parseFloat(freeInput.value);
       const msg=document.getElementById("shipping-save-msg");
-      if(isNaN(value)||value<0){if(msg)msg.textContent="Enter a valid amount.";return}
+      if(isNaN(value)||value<0){if(msg)msg.textContent="Enter a valid shipping amount.";return}
+      if(isNaN(freeValue)||freeValue<0){if(msg)msg.textContent="Enter a valid free-shipping threshold.";return}
       SHIPPING_PRICE=value;
+      FREE_SHIPPING_THRESHOLD=freeValue;
       const ok=await saveSettings();
-      if(msg)msg.textContent=ok?("Saved — shipping is now "+money(value)+" for every visitor."):"Saved for this session, but couldn't sync — check your connection and try again.";
+      if(msg)msg.textContent=ok?(`Saved — shipping is ${money(value)}, free over ${money(freeValue)}, for every visitor.`):"Saved for this session, but couldn't sync — check your connection and try again.";
       renderCheckout();
     }
     function renderDiscountsTab(){
@@ -534,6 +544,7 @@
         names:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.name])),
         gallery:gallery.map(g=>({id:g.id,name:g.name})),
         shippingPrice:SHIPPING_PRICE,
+        freeShippingThreshold:FREE_SHIPPING_THRESHOLD,
         discountCodes
       };
       try{
@@ -557,6 +568,7 @@
         if(settings.names){PRODUCTS.forEach(p=>{if(settings.names[p.id])p.name=settings.names[p.id]})}
         if(Array.isArray(settings.gallery))gallery=settings.gallery.map(g=>({id:g.id,name:g.name,dataUrl:""}));
         if(typeof settings.shippingPrice==="number")SHIPPING_PRICE=settings.shippingPrice;
+        if(typeof settings.freeShippingThreshold==="number")FREE_SHIPPING_THRESHOLD=settings.freeShippingThreshold;
         if(Array.isArray(settings.discountCodes))discountCodes=settings.discountCodes;
       }catch(e){console.error("Could not load settings from Google Sheets",e)}
     }
