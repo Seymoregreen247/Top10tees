@@ -596,6 +596,7 @@
     document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeOverlay(o.id)}));
     document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>closeOverlay(o.id))});
     document.addEventListener("contextmenu",e=>{if(e.target.closest(".art-wrap,.modal-art"))e.preventDefault()});
+    renderProducts();updateCartCount();
     (async()=>{await loadSettings();await loadPhotos();renderProducts();updateCartCount()})();
   </script>
 </body>
