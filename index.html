@@ -33,6 +33,7 @@
     .trust-strip{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line);background:var(--cream)}.trust{padding:20px 14px;text-align:center;border-right:1px solid var(--line)}.trust:last-child{border-right:0}.trust b{display:block;color:var(--navy);font:800 14px Barlow Condensed,sans-serif;letter-spacing:1px}.trust span{font-size:10px;color:var(--muted);letter-spacing:.5px}
     main{max-width:1440px;margin:auto;padding:70px clamp(14px,4vw,56px)}.section-head{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:30px}.section-kicker{color:var(--red);font-size:11px;font-weight:900;letter-spacing:4px}.section-head h2{font:900 clamp(42px,7vw,76px)/.85 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0 0}.section-note{max-width:390px;color:var(--muted);font-size:13px;line-height:1.65}
     .product-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px}.product-card{position:relative;background:#fff;border:1px solid var(--line);box-shadow:0 4px 14px rgba(7,29,73,.06);transition:.22s;overflow:hidden}.product-card:hover{transform:translateY(-5px);box-shadow:var(--shadow);border-color:#aebbd0}.rank{position:absolute;z-index:5;top:11px;left:11px;background:var(--navy);color:#fff;padding:7px 10px;font:900 13px Barlow Condensed,sans-serif;letter-spacing:1px}.art-wrap{position:relative;aspect-ratio:1;background:#f4f6fa;overflow:hidden}.art-wrap img{width:100%;height:100%;object-fit:contain;display:block}.art-watermark{position:absolute;inset:0;z-index:4;pointer-events:none;display:flex;flex-direction:column;justify-content:space-around;align-items:center;overflow:hidden;transform:rotate(-28deg) scale(1.35)}.art-watermark span{font:900 9px Inter,sans-serif;letter-spacing:3px;color:rgba(7,29,73,.13);white-space:nowrap}.corner-stamp{position:absolute;right:9px;bottom:9px;z-index:6;border:2px solid rgba(215,25,54,.72);color:rgba(215,25,54,.82);background:rgba(255,255,255,.86);border-radius:50%;width:56px;height:56px;display:grid;place-items:center;text-align:center;font:900 9px/1 Barlow Condensed,sans-serif;letter-spacing:1px;transform:rotate(-10deg)}.product-info{padding:18px}.product-name{font:900 22px/1 Barlow Condensed,sans-serif;color:var(--navy);min-height:44px}.product-tag{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:6px}.product-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:16px}.price{font:900 25px Barlow Condensed,sans-serif}.choose{border:0;background:var(--navy);color:#fff;padding:10px 12px;font:800 11px Inter,sans-serif;letter-spacing:.8px;text-transform:uppercase}
+    .product-card,.choose{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='%23000000'><rect x='11' y='19' width='10' height='9' rx='3'/><circle cx='9' cy='14' r='5' fill='none' stroke='%23000000' stroke-width='2.6'/><rect x='13' y='2' width='3.4' height='13' rx='1.7'/><rect x='17.5' y='1' width='3.4' height='14' rx='1.7'/><rect x='22' y='3' width='3.4' height='12' rx='1.7'/></g></svg>") 6 28,pointer}
     footer{background:var(--navy);color:#fff;padding:40px clamp(18px,5vw,70px);display:flex;justify-content:space-between;align-items:center;gap:25px}.footer-brand{font:900 34px Barlow Condensed,sans-serif}.footer-copy{color:#9fb0ce;font-size:11px;line-height:1.7}.stripes{display:flex;gap:8px}.stripes i{display:block;width:9px;height:45px;background:var(--red);transform:skew(-16deg)}
     .overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(3,12,30,.84);padding:18px;align-items:center;justify-content:center}.overlay.open{display:flex}.modal{background:#fff;width:min(760px,100%);max-height:92vh;overflow:auto;box-shadow:0 28px 80px rgba(0,0,0,.35)}.modal-head{position:sticky;top:0;z-index:3;display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff;padding:17px 20px}.modal-title{font:900 24px Barlow Condensed,sans-serif;letter-spacing:1px}.close{border:0;background:transparent;color:#fff;font-size:25px}.modal-body{padding:22px}.product-modal-grid{display:grid;grid-template-columns:260px 1fr;gap:24px}.modal-art{position:relative;background:#f4f6fa;aspect-ratio:1}.modal-art img{width:100%;height:100%;object-fit:contain}.choice-title{font-size:10px;font-weight:900;letter-spacing:2px;color:var(--muted);margin:17px 0 8px}.choices{display:flex;flex-wrap:wrap;gap:7px}.choice{border:1px solid var(--line);background:#fff;padding:9px 12px;font-weight:700;font-size:12px}.choice.on{background:var(--navy);color:#fff;border-color:var(--navy)}.qty{display:flex;align-items:center}.qty button{width:38px;height:38px;border:1px solid var(--line);background:#fff}.qty strong{display:grid;place-items:center;width:48px;height:38px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.add-bag{width:100%;border:0;background:var(--red);color:#fff;padding:16px;margin-top:21px;font-weight:900;letter-spacing:1px}.selection-total{font:900 28px Barlow Condensed,sans-serif;color:var(--navy);margin-top:17px}
     .cart-empty{text-align:center;padding:50px 15px;color:var(--muted)}.cart-line{display:grid;grid-template-columns:74px 1fr auto;gap:13px;padding:13px 0;border-bottom:1px solid var(--line)}.cart-line img{width:74px;height:74px;object-fit:contain;background:#f5f6f8}.cart-line-name{font-weight:900;color:var(--navy)}.cart-line-detail{font-size:11px;color:var(--muted);line-height:1.6;margin-top:5px}.remove{border:0;background:none;color:var(--red);font-size:11px;padding:0;margin-top:6px}.cart-summary{background:var(--cream);padding:16px;margin-top:18px}.summary-row{display:flex;justify-content:space-between;margin:8px 0;font-size:13px}.summary-row.total{font:900 23px Barlow Condensed,sans-serif;color:var(--navy);border-top:1px solid #d5d0c5;padding-top:12px}.checkout{width:100%;border:0;background:#0070ba;color:#fff;padding:16px;font-weight:900;margin-top:12px}.checkout:disabled{background:#aab3c2;cursor:not-allowed}
@@ -163,14 +164,39 @@
       const lines=document.getElementById("cart-lines"),footer=document.getElementById("cart-footer");
       if(!cart.length){lines.innerHTML='<div class="cart-empty">Your bag is empty.<br>Choose one of the Top 10.</div>';footer.innerHTML="";return}
       lines.innerHTML=cart.map((i,n)=>`<div class="cart-line"><img src="${i.image}" alt=""><div><div class="cart-line-name">${escapeXml(i.name)}</div><div class="cart-line-detail">${i.color} • Size ${i.size} • Qty ${i.qty}${i.prints&&i.prints.length?` • ${i.prints.join(", ")}`:""}</div><button class="remove" onclick="removeItem(${n})">REMOVE</button></div><strong>${money(i.total)}</strong></div>`).join("");
-      footer.innerHTML=`<div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div><div class="summary-row"><span>Shipping</span><span>Calculated next</span></div><div class="summary-row total"><span>SUBTOTAL</span><span>${money(subtotal())}</span></div></div><button class="checkout" onclick="startCheckout()">CONTINUE TO PAYPAL</button>`;
+      footer.innerHTML=`<div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div>${appliedDiscount?`<div class="summary-row"><span>Discount (${escapeXml(appliedDiscount.code)})</span><b style="color:var(--red)">-${money(discountAmount())}</b></div>`:""}<div class="summary-row"><span>Shipping</span><span>Calculated next</span></div><div class="summary-row total"><span>SUBTOTAL</span><span>${money(subtotal()-discountAmount())}</span></div></div><div style="display:flex;gap:8px;margin:12px 0 4px"><input id="cart-discount-input" placeholder="DISCOUNT CODE" style="flex:1;border:1px solid var(--line);padding:8px;text-transform:uppercase" value="${appliedDiscount?appliedDiscount.code:''}"><button class="choice" onclick="applyDiscountCode('cart-discount-input','cart-discount-msg')">${appliedDiscount?"REMOVE":"APPLY"}</button></div><div id="cart-discount-msg" style="font-size:11px;color:var(--muted);margin-bottom:10px"></div><button class="checkout" onclick="startCheckout()">CONTINUE TO PAYPAL</button>`;
     }
     function shippingFee(){return deliveryMethod==="shipping"?SHIPPING_PRICE:0}
+    function discountAmount(){
+      if(!appliedDiscount)return 0;
+      const sub=subtotal();
+      if(appliedDiscount.type==="percent")return Math.min(sub,sub*appliedDiscount.value/100);
+      return Math.min(sub,appliedDiscount.value);
+    }
+    function grandTotal(){return Math.max(0,subtotal()+shippingFee()-discountAmount())}
+    function applyDiscountCode(inputId,msgId){
+      const input=document.getElementById(inputId);
+      const msg=document.getElementById(msgId);
+      if(appliedDiscount){
+        appliedDiscount=null;
+        if(msg)msg.textContent="Discount removed.";
+        renderCart();renderCheckout();
+        return;
+      }
+      const raw=(input?.value||"").trim().toUpperCase();
+      if(!raw){if(msg)msg.textContent="Enter a code.";return}
+      if(!raw.startsWith("TOP10")){if(msg)msg.textContent="That's not a valid Top 10 Tees code.";return}
+      const match=discountCodes.find(d=>d.code===raw&&d.active);
+      if(!match){if(msg)msg.textContent="Code not found or no longer active.";return}
+      appliedDiscount={code:match.code,type:match.type,value:match.value};
+      if(msg)msg.textContent=`"${match.code}" applied — ${match.type==="percent"?match.value+"% off":money(match.value)+" off"}.`;
+      renderCart();renderCheckout();
+    }
     function startCheckout(){deliveryMethod="shipping";closeOverlay("cart-overlay");renderCheckout();openOverlay("checkout-overlay");loadPayPal()}
     function renderCheckout(){
-      document.getElementById("checkout-body").innerHTML=`<div class="checkout-layout"><div><div class="field"><label>FULL NAME</label><input id="buyer-name" autocomplete="name"></div><div class="field"><label>EMAIL</label><input id="buyer-email" type="email" autocomplete="email"></div><div class="field"><label>PHONE</label><input id="buyer-phone" autocomplete="tel"></div><div class="field"><label>DELIVERY</label><select id="delivery" onchange="setDelivery(this.value)"><option value="shipping">Ship my order (+${money(SHIPPING_PRICE)})</option><option value="pickup">Pickup in Roslindale</option></select></div><div class="field" id="address-field"><label>SHIPPING ADDRESS</label><textarea id="buyer-address" rows="3" placeholder="Street, city, state and ZIP"></textarea></div></div><div><div class="paypal-panel"><div class="paypal-logo">PayPal</div><div class="paypal-message">Complete your order below.</div><div id="paypal-button-container"></div><div class="paypal-placeholder" id="paypal-placeholder">CHECKOUT COMING SOON</div></div><div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div><div class="summary-row"><span>Shipping</span><b id="checkout-shipping">${money(shippingFee())}</b></div><div class="summary-row total"><span>TOTAL</span><span id="checkout-total">${money(subtotal()+shippingFee())}</span></div></div></div></div>`;
+      document.getElementById("checkout-body").innerHTML=`<div class="checkout-layout"><div><div class="field"><label>FULL NAME</label><input id="buyer-name" autocomplete="name"></div><div class="field"><label>EMAIL</label><input id="buyer-email" type="email" autocomplete="email"></div><div class="field"><label>PHONE</label><input id="buyer-phone" autocomplete="tel"></div><div class="field"><label>DELIVERY</label><select id="delivery" onchange="setDelivery(this.value)"><option value="shipping">Ship my order (+${money(SHIPPING_PRICE)})</option><option value="pickup">Pickup in Roslindale</option></select></div><div class="field" id="address-field"><label>SHIPPING ADDRESS</label><textarea id="buyer-address" rows="3" placeholder="Street, city, state and ZIP"></textarea></div></div><div><div class="paypal-panel"><div class="paypal-logo">PayPal</div><div class="paypal-message">Complete your order below.</div><div id="paypal-button-container"></div><div class="paypal-placeholder" id="paypal-placeholder">CHECKOUT COMING SOON</div></div><div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div><div class="summary-row" id="checkout-discount-row" style="${appliedDiscount?"":"display:none"}"><span>Discount${appliedDiscount?` (${escapeXml(appliedDiscount.code)})`:""}</span><b id="checkout-discount" style="color:var(--red)">-${money(discountAmount())}</b></div><div class="summary-row"><span>Shipping</span><b id="checkout-shipping">${money(shippingFee())}</b></div><div class="summary-row total"><span>TOTAL</span><span id="checkout-total">${money(grandTotal())}</span></div></div><div style="display:flex;gap:8px;margin:12px 0 4px"><input id="checkout-discount-input" placeholder="DISCOUNT CODE" style="flex:1;border:1px solid var(--line);padding:8px;text-transform:uppercase" value="${appliedDiscount?appliedDiscount.code:''}"><button class="choice" onclick="applyDiscountCode('checkout-discount-input','checkout-discount-msg')">${appliedDiscount?"REMOVE":"APPLY"}</button></div><div id="checkout-discount-msg" style="font-size:11px;color:var(--muted)"></div></div></div>`;
     }
-    function setDelivery(value){deliveryMethod=value;const address=document.getElementById("address-field");if(address)address.classList.toggle("hidden",value==="pickup");const ship=document.getElementById("checkout-shipping"),total=document.getElementById("checkout-total");if(ship)ship.textContent=money(shippingFee());if(total)total.textContent=money(subtotal()+shippingFee())}
+    function setDelivery(value){deliveryMethod=value;const address=document.getElementById("address-field");if(address)address.classList.toggle("hidden",value==="pickup");const ship=document.getElementById("checkout-shipping"),total=document.getElementById("checkout-total");if(ship)ship.textContent=money(shippingFee());if(total)total.textContent=money(grandTotal())}
     function validBuyer(){
       const name=document.getElementById("buyer-name"),email=document.getElementById("buyer-email"),phone=document.getElementById("buyer-phone"),address=document.getElementById("buyer-address");
       const fields=[name,email,phone];if(deliveryMethod==="shipping")fields.push(address);let ok=true;fields.forEach(f=>{if(!f||!f.value.trim()){if(f)f.style.borderColor="var(--red)";ok=false}else f.style.borderColor=""});
@@ -190,7 +216,7 @@
         onClick(data,actions){if(!validBuyer()){alert("Please complete your contact and shipping information before paying.");return actions.reject()}return actions.resolve()},
         createOrder(data,actions){
           const items=cart.map(i=>({name:i.name,sku:i.productId,unit_amount:{currency_code:CURRENCY,value:(i.total/i.qty).toFixed(2)},quantity:String(i.qty),description:`${i.garment}, ${i.color}, Size ${i.size}`}));
-          return actions.order.create({purchase_units:[{description:"Top 10 Tees",amount:{currency_code:CURRENCY,value:(subtotal()+shippingFee()).toFixed(2),breakdown:{item_total:{currency_code:CURRENCY,value:subtotal().toFixed(2)},shipping:{currency_code:CURRENCY,value:shippingFee().toFixed(2)}}},items}]});
+          return actions.order.create({purchase_units:[{description:"Top 10 Tees",amount:{currency_code:CURRENCY,value:grandTotal().toFixed(2),breakdown:{item_total:{currency_code:CURRENCY,value:subtotal().toFixed(2)},shipping:{currency_code:CURRENCY,value:shippingFee().toFixed(2)},discount:{currency_code:CURRENCY,value:discountAmount().toFixed(2)}}},items}]});
         },
         onApprove(data,actions){return actions.order.capture().then(details=>{if(details.status!=="COMPLETED")throw new Error("Payment was not completed");sendOrderToSheet(details.id);showSuccess(details.id)})},
         onCancel(){alert("Payment was cancelled. Your bag is still here.")},
@@ -208,20 +234,24 @@
         address:deliveryMethod==="shipping"?(document.getElementById("buyer-address")?.value||""):"Pickup in Roslindale",
         items:cart.map(i=>({name:i.name,color:i.color,size:i.size,qty:i.qty,prints:i.prints||[],total:i.total})),
         subtotal:subtotal(),
+        discountCode:appliedDiscount?appliedDiscount.code:"",
+        discountAmount:discountAmount(),
         shipping:shippingFee(),
-        total:subtotal()+shippingFee()
+        total:grandTotal()
       };
       fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload)})
         .catch(e=>console.error("Could not log order to Google Sheets",e));
     }
     function showSuccess(orderId){document.getElementById("checkout-body").innerHTML=`<div class="success"><div class="success-icon">✓</div><h3>PAYMENT COMPLETED</h3><p>Your payment was completed successfully. Save this order number for your records.</p><div class="order-id">${escapeXml(orderId)}</div><p>We’ll confirm production and fulfillment using the contact information supplied at checkout.</p><button class="primary" onclick="finishOrder()">DONE</button></div>`}
-    function finishOrder(){cart=[];updateCartCount();closeOverlay("checkout-overlay")}
+    function finishOrder(){cart=[];appliedDiscount=null;updateCartCount();closeOverlay("checkout-overlay")}
     function openOverlay(id){document.getElementById(id).classList.add("open");document.body.style.overflow="hidden"}
     function closeOverlay(id){document.getElementById(id).classList.remove("open");document.body.style.overflow=""}
     const ADMIN_PIN="239367";
     let manageUnlocked=false;
     let manageView="designs";
     let gallery=[];
+    let discountCodes=[];
+    let appliedDiscount=null;
     function openManage(){renderManageBody();openOverlay("manage-overlay")}
     function renderManageBody(){
       const body=document.getElementById("manage-body");
@@ -235,8 +265,9 @@
         <button class="choice ${manageView==='designs'?'on':''}" onclick="switchManageView('designs')">TOP 10 DESIGNS</button>
         <button class="choice ${manageView==='gallery'?'on':''}" onclick="switchManageView('gallery')">PHOTO GALLERY</button>
         <button class="choice ${manageView==='shipping'?'on':''}" onclick="switchManageView('shipping')">SHIPPING</button>
+        <button class="choice ${manageView==='discounts'?'on':''}" onclick="switchManageView('discounts')">DISCOUNT CODES</button>
       </div>`;
-      body.innerHTML=tabs+(manageView==="designs"?renderDesignsTab():manageView==="gallery"?renderGalleryTab():renderShippingTab());
+      body.innerHTML=tabs+(manageView==="designs"?renderDesignsTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():renderDiscountsTab());
     }
     function switchManageView(view){manageView=view;renderManageBody()}
     function renderDesignsTab(){
@@ -297,6 +328,73 @@
       const ok=await saveSettings();
       if(msg)msg.textContent=ok?("Saved — shipping is now "+money(value)+" for every visitor."):"Saved for this session, but couldn't sync — check your connection and try again.";
       renderCheckout();
+    }
+    function renderDiscountsTab(){
+      return `<div class="section-note" style="margin-bottom:18px">Every code must start with <b>TOP10</b> so it's recognizably yours. Add a code below, choose percent or flat dollars off, and it works live in every customer's cart and at checkout.</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;border:1px solid var(--line);padding:14px">
+        <div>
+          <div class="product-tag" style="margin-bottom:4px">CODE</div>
+          <div style="display:flex;align-items:center;border:1px solid var(--line)">
+            <span style="padding:9px 8px;font-weight:900;background:#f4f6fa">TOP10</span>
+            <input id="new-discount-suffix" placeholder="e.g. WELCOME" style="border:none;padding:9px 8px;width:140px;text-transform:uppercase">
+          </div>
+        </div>
+        <div>
+          <div class="product-tag" style="margin-bottom:4px">TYPE</div>
+          <select id="new-discount-type" class="choice">
+            <option value="percent">% OFF</option>
+            <option value="flat">$ OFF</option>
+          </select>
+        </div>
+        <div>
+          <div class="product-tag" style="margin-bottom:4px">VALUE</div>
+          <input id="new-discount-value" type="number" min="0" step="0.5" style="width:90px;border:1px solid var(--line);padding:9px">
+        </div>
+        <button class="add-bag" onclick="addDiscountCode()">ADD CODE</button>
+      </div>
+      <div id="discount-add-msg" style="font-size:11px;color:var(--muted);margin-bottom:16px"></div>
+      ${discountCodes.length?discountCodes.map(d=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:12px 0">
+          <div>
+            <div style="font:900 15px Barlow Condensed,sans-serif;color:var(--navy)">${escapeXml(d.code)}</div>
+            <div style="font-size:12px;color:var(--muted)">${d.type==="percent"?d.value+"% off":money(d.value)+" off"} • ${d.active?"Active":"Paused"}</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="choice" onclick="toggleDiscountCode('${d.code}')">${d.active?"PAUSE":"ACTIVATE"}</button>
+            <button class="choice" onclick="removeDiscountCode('${d.code}')">DELETE</button>
+          </div>
+        </div>`).join(""):`<div class="section-note">No discount codes yet — add one above.</div>`}`;
+    }
+    async function addDiscountCode(){
+      const suffixInput=document.getElementById("new-discount-suffix");
+      const typeInput=document.getElementById("new-discount-type");
+      const valueInput=document.getElementById("new-discount-value");
+      const msg=document.getElementById("discount-add-msg");
+      const suffix=(suffixInput?.value||"").trim().toUpperCase().replace(/[^A-Z0-9]/g,"");
+      const type=typeInput?.value==="flat"?"flat":"percent";
+      const value=parseFloat(valueInput?.value);
+      if(!suffix){if(msg)msg.textContent="Add something after TOP10, like WELCOME or FALL.";return}
+      if(isNaN(value)||value<=0){if(msg)msg.textContent="Enter a value greater than 0.";return}
+      if(type==="percent"&&value>100){if(msg)msg.textContent="Percent off can't be more than 100.";return}
+      const code="TOP10"+suffix;
+      if(discountCodes.some(d=>d.code===code)){if(msg)msg.textContent=`"${code}" already exists.`;return}
+      discountCodes.push({code,type,value,active:true});
+      const ok=await saveSettings();
+      renderManageBody();
+      const newMsg=document.getElementById("discount-add-msg");
+      if(newMsg)newMsg.textContent=ok?`"${code}" added and live for every visitor.`:`"${code}" saved on this device, but couldn't sync — try again.`;
+    }
+    async function toggleDiscountCode(code){
+      const d=discountCodes.find(x=>x.code===code);if(!d)return;
+      d.active=!d.active;
+      await saveSettings();
+      renderManageBody();
+    }
+    async function removeDiscountCode(code){
+      discountCodes=discountCodes.filter(d=>d.code!==code);
+      if(appliedDiscount&&appliedDiscount.code===code)appliedDiscount=null;
+      await saveSettings();
+      renderManageBody();
     }
     function moveProduct(productId,delta){
       const idx=PRODUCTS.findIndex(p=>p.id===productId);
@@ -435,7 +533,8 @@
         prices:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.price])),
         names:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.name])),
         gallery:gallery.map(g=>({id:g.id,name:g.name})),
-        shippingPrice:SHIPPING_PRICE
+        shippingPrice:SHIPPING_PRICE,
+        discountCodes
       };
       try{
         await fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"settings",settings})});
@@ -458,6 +557,7 @@
         if(settings.names){PRODUCTS.forEach(p=>{if(settings.names[p.id])p.name=settings.names[p.id]})}
         if(Array.isArray(settings.gallery))gallery=settings.gallery.map(g=>({id:g.id,name:g.name,dataUrl:""}));
         if(typeof settings.shippingPrice==="number")SHIPPING_PRICE=settings.shippingPrice;
+        if(Array.isArray(settings.discountCodes))discountCodes=settings.discountCodes;
       }catch(e){console.error("Could not load settings from Google Sheets",e)}
     }
     document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeOverlay(o.id)}));
