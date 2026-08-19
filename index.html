@@ -6,6 +6,16 @@
   <meta name="theme-color" content="#071d49">
   <meta name="description" content="Top 10 Tees — ten standout designs built for the culture.">
   <title>Top 10 Tees</title>
+  <!-- Social share preview (Facebook/Messenger/X/TikTok link cards read these) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Top 10 Tees">
+  <meta property="og:title" content="Top 10 Tees — Boston's Top 10 Streetwear Designs">
+  <meta property="og:description" content="Ten standout designs built for the culture. Pick your design, color, and size — made in Boston.">
+  <meta property="og:image" content="/android-chrome-512x512.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Top 10 Tees — Boston's Top 10 Streetwear Designs">
+  <meta name="twitter:description" content="Ten standout designs built for the culture. Pick your design, color, and size — made in Boston.">
+  <meta name="twitter:image" content="/android-chrome-512x512.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -42,6 +52,10 @@
     @media(max-width:720px){.trust-strip{grid-template-columns:1fr 1fr}.trust:nth-child(2){border-right:0}.product-grid{grid-template-columns:1fr 1fr;gap:10px}.product-info{padding:13px}.product-name{font-size:19px}.section-head{display:block}.section-note{margin-top:15px}.product-modal-grid,.checkout-layout{grid-template-columns:1fr}.modal-art{max-width:320px;margin:auto}.site-header{padding:11px 13px}.brand-sub{display:none}.cart-button{padding:10px 12px}.hero{min-height:420px;padding-top:65px;padding-bottom:65px}h1{font-size:78px}.art-watermark span{font-size:7px}footer{align-items:flex-start}.stripes{display:none}}
     @media(max-width:430px){.product-grid{grid-template-columns:1fr}.art-wrap{aspect-ratio:1.08}.product-name{min-height:auto}.announcement{font-size:9px}.brand-mark{width:40px;height:40px}.brand-name{font-size:25px}}
     @media print{body{display:none!important}}
+    .share-btn{position:absolute;z-index:6;top:11px;right:11px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(7,29,73,.82);color:#fff;display:grid;place-items:center;backdrop-filter:blur(2px)}.share-btn:hover{background:var(--red)}.share-btn svg{width:16px;height:16px}
+    .modal-share-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;color:var(--navy);padding:9px 13px;font:800 11px Inter,sans-serif;letter-spacing:.6px;text-transform:uppercase;margin-top:10px}.modal-share-btn:hover{background:var(--navy);color:#fff}.modal-share-btn svg{width:14px;height:14px}
+    .share-menu{position:fixed;z-index:200;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);min-width:190px;padding:6px;display:flex;flex-direction:column}.share-menu a,.share-menu button{display:flex;align-items:center;gap:9px;padding:10px 11px;font:700 13px Inter,sans-serif;color:var(--ink);text-decoration:none;background:transparent;border:0;text-align:left;width:100%}.share-menu a:hover,.share-menu button:hover{background:var(--cream)}
+    #share-toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:300;background:var(--navy);color:#fff;padding:12px 20px;font:800 12px Inter,sans-serif;letter-spacing:.6px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.22s}#share-toast.show{opacity:1;transform:translate(-50%,0)}
   </style>
 </head>
 <body>
@@ -137,22 +151,76 @@
       return "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svg);
     }
     function watermark(){return '<div class="art-watermark"><span>TOP 10 TEES</span><span>TOP 10 TEES</span><span>TOP 10 TEES</span></div><div class="corner-stamp">TOP 10<br>ORIGINAL</div>';}
+    function shareIcon(){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6"/></svg>';}
+    function buildShareUrl(product){const url=new URL(window.location.href);url.search="";url.hash="";url.searchParams.set("product",product.id);return url.toString();}
+    function shareProduct(index,ev){
+      if(ev){ev.stopPropagation();ev.preventDefault();}
+      const product=PRODUCTS[index];
+      const url=buildShareUrl(product);
+      const title=product.name+" — Top 10 Tees";
+      const text="Check out "+product.name+" from the Top 10 Tees collection \uD83D\uDD25";
+      if(navigator.share){
+        navigator.share({title:title,text:text,url:url}).catch(()=>{});
+      }else{
+        openShareMenu(url,text,ev);
+      }
+    }
+    function openShareMenu(url,text,ev){
+      closeShareMenu();
+      const btn=ev?ev.currentTarget:null;
+      const menu=document.createElement("div");
+      menu.className="share-menu";
+      menu.id="share-menu";
+      menu.innerHTML=
+        '<a href="https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(url)+'" target="_blank" rel="noopener">Share to Facebook</a>'+
+        '<a href="https://twitter.com/intent/tweet?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(text)+'" target="_blank" rel="noopener">Share to X</a>'+
+        '<a href="https://api.whatsapp.com/send?text='+encodeURIComponent(text+" "+url)+'" target="_blank" rel="noopener">Share to WhatsApp</a>'+
+        '<button type="button" onclick="copyShareLink(\''+url.replace(/'/g,"\\'")+'\')">Copy link</button>';
+      document.body.appendChild(menu);
+      const vw=window.innerWidth,vh=window.innerHeight;
+      let top=80,left=vw-206;
+      if(btn){const r=btn.getBoundingClientRect();top=Math.min(r.bottom+6,vh-180);left=Math.min(Math.max(8,r.right-198),vw-206);}
+      menu.style.top=top+"px";menu.style.left=left+"px";
+      setTimeout(()=>document.addEventListener("click",outsideShareClick),0);
+    }
+    function closeShareMenu(){const m=document.getElementById("share-menu");if(m)m.remove();document.removeEventListener("click",outsideShareClick);}
+    function outsideShareClick(e){const m=document.getElementById("share-menu");if(m&&!m.contains(e.target))closeShareMenu();}
+    function copyShareLink(url){
+      closeShareMenu();
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>toastShare("Link copied!")).catch(()=>window.prompt("Copy this link:",url));}
+      else{window.prompt("Copy this link:",url);}
+    }
+    function toastShare(msg){
+      let t=document.getElementById("share-toast");
+      if(!t){t=document.createElement("div");t.id="share-toast";document.body.appendChild(t);}
+      t.textContent=msg;t.classList.add("show");
+      clearTimeout(window.__shareToastTimer);
+      window.__shareToastTimer=setTimeout(()=>t.classList.remove("show"),1800);
+    }
+    function openSharedProductFromUrl(){
+      const params=new URLSearchParams(window.location.search);
+      const pid=params.get("product");
+      if(!pid)return;
+      const idx=PRODUCTS.findIndex(p=>p.id===pid);
+      if(idx>-1)chooseProduct(idx);
+    }
     function money(n){return "$"+Number(n).toFixed(2)}
     function printsCost(){return selection.prints.reduce((n,p)=>n+(PRINTS[p]||0),0)}
     function productTotal(){return (current.price+GARMENTS[selection.garment]+SIZE_UPCHARGE[selection.size]+printsCost())*selection.qty}
 
     function renderProducts(){
-      document.getElementById("product-grid").innerHTML=PRODUCTS.map((p,i)=>`<article class="product-card" role="button" tabindex="0" aria-label="Choose ${escapeXml(p.name)}" onclick="chooseProduct(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseProduct(${i})}"><div class="rank">NO. ${String(i+1).padStart(2,"0")}</div><div class="art-wrap" oncontextmenu="return false"><img src="${productArt(p,i)}" alt="${escapeXml(p.name)}" loading="eager" decoding="async" fetchpriority="high">${watermark()}</div><div class="product-info"><div class="product-name">${escapeXml(p.name)}</div><div class="product-tag">${escapeXml(p.tag)}</div><div class="product-bottom"><div class="price">FROM ${money(p.price)}</div><button class="choose" onclick="event.stopPropagation();chooseProduct(${i})">Choose</button></div></div></article>`).join("");
+      document.getElementById("product-grid").innerHTML=PRODUCTS.map((p,i)=>`<article class="product-card" role="button" tabindex="0" aria-label="Choose ${escapeXml(p.name)}" onclick="chooseProduct(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseProduct(${i})}"><div class="rank">NO. ${String(i+1).padStart(2,"0")}</div><button class="share-btn" onclick="shareProduct(${i},event)" aria-label="Share ${escapeXml(p.name)}" title="Share">${shareIcon()}</button><div class="art-wrap" oncontextmenu="return false"><img src="${productArt(p,i)}" alt="${escapeXml(p.name)}" loading="eager" decoding="async" fetchpriority="high">${watermark()}</div><div class="product-info"><div class="product-name">${escapeXml(p.name)}</div><div class="product-tag">${escapeXml(p.tag)}</div><div class="product-bottom"><div class="price">FROM ${money(p.price)}</div><button class="choose" onclick="event.stopPropagation();chooseProduct(${i})">Choose</button></div></div></article>`).join("");
     }
     function chooseProduct(index){
       current=PRODUCTS[index];const firstColor=(current.colors&&current.colors.length?current.colors:COLORS)[0];selection={garment:"Tee",color:firstColor,size:"L",qty:1,prints:[]};renderProductModal();openOverlay("product-overlay");
+      try{const url=new URL(window.location.href);url.searchParams.set("product",current.id);history.replaceState(null,"",url);}catch(e){}
     }
     function renderChoices(values,key){return values.map(v=>`<button class="choice ${selection[key]===v?'on':''}" onclick="setChoice('${key}','${v}')">${v}${key==='garment'&&GARMENTS[v]?` +${money(GARMENTS[v])}`:''}${key==='size'&&SIZE_UPCHARGE[v]?` +${money(SIZE_UPCHARGE[v])}`:''}</button>`).join("")}
     function renderPrintChoices(){return Object.keys(PRINTS).map(v=>`<button class="choice ${selection.prints.includes(v)?'on':''}" onclick="togglePrint('${v}')">${v} +${money(PRINTS[v])}</button>`).join("")}
     function togglePrint(value){const i=selection.prints.indexOf(value);if(i>-1)selection.prints.splice(i,1);else selection.prints.push(value);renderProductModal()}
     function renderProductModal(){
       const i=PRODUCTS.indexOf(current);
-      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art"><img src="${productArt(current,i)}" alt="${escapeXml(current.name)}">${watermark()}</div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><div class="choice-title">COLOR</div><div class="choices">${renderChoices(current.colors&&current.colors.length?current.colors:COLORS,'color')}</div><div class="choice-title">SIZE</div><div class="choices">${renderChoices(Object.keys(SIZE_UPCHARGE),'size')}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><strong>${selection.qty}</strong><button onclick="changeQty(1)">+</button></div><div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button></div></div>`;
+      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art"><img src="${productArt(current,i)}" alt="${escapeXml(current.name)}">${watermark()}</div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this tee</button><div class="choice-title">COLOR</div><div class="choices">${renderChoices(current.colors&&current.colors.length?current.colors:COLORS,'color')}</div><div class="choice-title">SIZE</div><div class="choices">${renderChoices(Object.keys(SIZE_UPCHARGE),'size')}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><strong>${selection.qty}</strong><button onclick="changeQty(1)">+</button></div><div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button></div></div>`;
     }
     function setChoice(key,value){selection[key]=value;renderProductModal()}
     function changeQty(delta){selection.qty=Math.max(1,Math.min(12,selection.qty+delta));renderProductModal()}
@@ -246,7 +314,10 @@
     function showSuccess(orderId){document.getElementById("checkout-body").innerHTML=`<div class="success"><div class="success-icon">✓</div><h3>PAYMENT COMPLETED</h3><p>Your payment was completed successfully. Save this order number for your records.</p><div class="order-id">${escapeXml(orderId)}</div><p>We’ll confirm production and fulfillment using the contact information supplied at checkout.</p><button class="primary" onclick="finishOrder()">DONE</button></div>`}
     function finishOrder(){cart=[];appliedDiscount=null;updateCartCount();closeOverlay("checkout-overlay")}
     function openOverlay(id){document.getElementById(id).classList.add("open");document.body.style.overflow="hidden"}
-    function closeOverlay(id){document.getElementById(id).classList.remove("open");document.body.style.overflow=""}
+    function closeOverlay(id){
+      document.getElementById(id).classList.remove("open");document.body.style.overflow="";
+      if(id==="product-overlay"){try{const url=new URL(window.location.href);url.searchParams.delete("product");history.replaceState(null,"",url);}catch(e){}}
+    }
     const ADMIN_PIN="239367";
     let manageUnlocked=false;
     let manageView="designs";
@@ -643,6 +714,7 @@
       try{await Promise.all([loadSettings(),loadPhotos()])}catch(e){console.error("Store refresh failed",e)}
       applyPhotos();
       renderProducts();updateCartCount();writeCache();
+      openSharedProductFromUrl();
     })();
   </script>
 </body>
