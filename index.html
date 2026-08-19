@@ -397,15 +397,19 @@
     function switchManageView(view){manageView=view;renderManageBody()}
     function renderDesignsTab(){
       return `<div class="section-note" style="margin-bottom:14px">Upload a photo, pick from your gallery, or use the arrows to rearrange order. Edit any name or price below, then hit <b>SAVE & GO LIVE</b> — that's the button that actually pushes everything to every visitor.</div>
-      <div style="margin-bottom:18px"><button class="add-bag" onclick="saveAllDesigns()">SAVE &amp; GO LIVE</button><span id="designs-save-msg" style="font-size:12px;color:var(--muted);margin-left:12px"></span></div>`+PRODUCTS.map((p,i)=>`
+      <div style="margin-bottom:18px"><button class="add-bag" onclick="saveAllDesigns()">SAVE &amp; GO LIVE</button><span id="designs-save-msg" style="font-size:12px;color:var(--muted);margin-left:12px"></span></div>`+Object.keys(CITY_META).map(city=>renderDesignsCitySection(city)).join("");
+    }
+    function renderDesignsCitySection(city){
+      const list=PRODUCTS.filter(p=>p.city===city);
+      return `<div class="section-kicker" style="margin:22px 0 10px">${CITY_META[city].label.toUpperCase()} — TOP 10</div>`+list.map((p,i)=>`
         <div style="display:grid;grid-template-columns:auto 90px 1fr auto;gap:14px;align-items:center;border-bottom:1px solid var(--line);padding:14px 0">
           <div style="display:flex;flex-direction:column;gap:4px">
             <button class="choice" style="padding:4px 8px" onclick="moveProduct('${p.id}',-1)" ${i===0?"disabled":""}>▲</button>
-            <button class="choice" style="padding:4px 8px" onclick="moveProduct('${p.id}',1)" ${i===PRODUCTS.length-1?"disabled":""}>▼</button>
+            <button class="choice" style="padding:4px 8px" onclick="moveProduct('${p.id}',1)" ${i===list.length-1?"disabled":""}>▼</button>
           </div>
-          <img src="${productArt(p,i)}" alt="" style="width:90px;height:90px;object-fit:contain;background:#f4f6fa">
+          <img src="${productArt(p,PRODUCTS.indexOf(p))}" alt="" style="width:90px;height:90px;object-fit:contain;background:#f4f6fa">
           <div>
-            <div style="font:900 11px Inter,sans-serif;letter-spacing:1px;color:var(--muted);margin-bottom:4px">NO. ${String(i+1).padStart(2,"0")} · ${(p.city||"boston").toUpperCase()}</div>
+            <div style="font:900 11px Inter,sans-serif;letter-spacing:1px;color:var(--muted);margin-bottom:4px">${CITY_META[city].label.toUpperCase()} NO. ${String(i+1).padStart(2,"0")}</div>
             <input id="name-input-${p.id}" value="${escapeXml(p.name)}" style="width:100%;max-width:260px;border:1px solid var(--line);padding:6px 8px;font:900 14px Barlow Condensed,sans-serif;color:var(--navy);margin-bottom:6px">
             <div style="display:flex;align-items:center;gap:6px">
               <span style="font-weight:900">$</span>
@@ -537,10 +541,14 @@
       renderManageBody();
     }
     function moveProduct(productId,delta){
-      const idx=PRODUCTS.findIndex(p=>p.id===productId);
-      const newIdx=idx+delta;
-      if(newIdx<0||newIdx>=PRODUCTS.length)return;
-      [PRODUCTS[idx],PRODUCTS[newIdx]]=[PRODUCTS[newIdx],PRODUCTS[idx]];
+      const p=PRODUCTS.find(x=>x.id===productId);if(!p)return;
+      const cityList=PRODUCTS.filter(x=>x.city===p.city);
+      const posInCity=cityList.findIndex(x=>x.id===productId);
+      const newPosInCity=posInCity+delta;
+      if(newPosInCity<0||newPosInCity>=cityList.length)return;
+      const other=cityList[newPosInCity];
+      const idxA=PRODUCTS.indexOf(p),idxB=PRODUCTS.indexOf(other);
+      [PRODUCTS[idxA],PRODUCTS[idxB]]=[PRODUCTS[idxB],PRODUCTS[idxA]];
       saveSettings();renderManageBody();renderProducts();writeCache();
     }
     function compressImage(file,opts){
