@@ -394,6 +394,7 @@
         <button class="choice ${manageView==='gallery'?'on':''}" onclick="switchManageView('gallery')">PHOTO GALLERY</button>
         <button class="choice ${manageView==='shipping'?'on':''}" onclick="switchManageView('shipping')">SHIPPING</button>
         <button class="choice ${manageView==='discounts'?'on':''}" onclick="switchManageView('discounts')">DISCOUNT CODES</button>
+        <a class="choice" href="template-builder.html" target="_blank" rel="noopener" style="text-decoration:none;margin-left:auto">TEMPLATE BUILDER ↗</a>
       </div>`;
       body.innerHTML=tabs+(manageView==="designs"?renderDesignsTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():renderDiscountsTab());
     }
