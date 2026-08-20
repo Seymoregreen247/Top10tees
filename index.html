@@ -61,9 +61,6 @@
     .city-toggle button{border:0;background:#fff;color:var(--navy);padding:9px 22px;font:800 12px Inter,sans-serif;letter-spacing:1.4px;text-transform:uppercase}
     .city-toggle button.on{background:var(--navy);color:#fff}
     .city-toggle button+button{border-left:1px solid var(--navy)}
-    body.city-boston{cursor:url('boston-cursor.png') 32 32,pointer}
-    body.city-detroit{cursor:url('detroit-cursor.png') 32 32,pointer}
-    body.city-boston input,body.city-boston textarea,body.city-boston select,body.city-detroit input,body.city-detroit textarea,body.city-detroit select{cursor:auto}
   </style>
 </head>
 <body>
@@ -258,8 +255,6 @@
       const meta=CITY_META[currentCity];if(!meta)return;
       const badge=document.getElementById("hero-badge");if(badge)badge.textContent=meta.badge;
       const sub=document.getElementById("hero-sub");if(sub)sub.textContent=meta.sub;
-      document.body.classList.remove("city-boston","city-detroit");
-      document.body.classList.add("city-"+currentCity);
     }
     function setCity(city){
       if(!CITY_META[city]||city===currentCity){currentCity=CITY_META[city]?city:currentCity;}
