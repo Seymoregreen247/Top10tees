@@ -173,6 +173,15 @@
     })();
 
     const SIZE_UPCHARGE={S:0,M:0,L:0,XL:0,"2XL":3,"3XL":3,"4XL":5,"5XL":5};
+    function getStock(product,color,size){
+      if(!product||!product.inventory||!product.inventory[color]||typeof product.inventory[color][size]!=="number")return Infinity;
+      return product.inventory[color][size];
+    }
+    function colorStock(product,color){
+      if(!product||!product.inventory||!product.inventory[color])return Infinity;
+      const sizes=product.inventory[color];
+      return Object.values(sizes).reduce((sum,v)=>sum+(typeof v==="number"?v:0),0);
+    }
     const GARMENTS={Tee:0};
     const COLORS=["Black","White","Red","Gray","Blue"];
     const COLOR_HEX={Black:"#101418",White:"#ffffff",Red:"#d71936",Gray:"#b6b6b6",Blue:"#0b1f3a"};
@@ -270,15 +279,29 @@
       renderProducts();
     }
     function chooseProduct(index){
-      current=PRODUCTS[index];const firstColor=(current.colors&&current.colors.length?current.colors:COLORS)[0];selection={garment:"Tee",color:firstColor,size:"L",qty:1,prints:[]};renderProductModal();openOverlay("product-overlay");
+      current=PRODUCTS[index];const firstColor=(current.colors&&current.colors.length?current.colors:COLORS)[0];
+      let size="L";
+      if(getStock(current,firstColor,size)<=0){
+        const avail=Object.keys(SIZE_UPCHARGE).find(sz=>getStock(current,firstColor,sz)>0);
+        if(avail)size=avail;
+      }
+      selection={garment:"Tee",color:firstColor,size,qty:1,prints:[]};renderProductModal();openOverlay("product-overlay");
       try{const url=new URL(window.location.href);url.searchParams.set("product",current.id);url.searchParams.set("city",current.city||currentCity);history.replaceState(null,"",url);}catch(e){}
     }
-    function renderChoices(values,key){return values.map(v=>`<button class="choice ${selection[key]===v?'on':''}" onclick="setChoice('${key}','${v}')">${v}${key==='garment'&&GARMENTS[v]?` +${money(GARMENTS[v])}`:''}${key==='size'&&SIZE_UPCHARGE[v]?` +${money(SIZE_UPCHARGE[v])}`:''}</button>`).join("")}
+    function renderChoices(values,key){return values.map(v=>`<button class="choice ${selection[key]===v?'on':''}" onclick="setChoice('${key}','${v}')">${v}${key==='garment'&&GARMENTS[v]?` +${money(GARMENTS[v])}`:''}</button>`).join("")}
+    function renderSizeChoices(){
+      return Object.keys(SIZE_UPCHARGE).map(v=>{
+        const stock=getStock(current,selection.color,v);
+        const soldOut=stock<=0;
+        return `<button class="choice ${selection.size===v?'on':''}" ${soldOut?'disabled style="opacity:.35;text-decoration:line-through;cursor:not-allowed"':''} onclick="${soldOut?'':`setChoice('size','${v}')`}">${v}${SIZE_UPCHARGE[v]?` +${money(SIZE_UPCHARGE[v])}`:''}${soldOut?' SOLD OUT':''}</button>`;
+      }).join("");
+    }
     function renderColorChoices(colors){
       return colors.map(c=>{
         const hex=COLOR_HEX[c]||"#ccc";
         const light=c==="White";
-        return `<button class="choice color-choice ${selection.color===c?'on':''}" onclick="setChoice('color','${c}')" title="${c}"><span class="swatch-dot" style="background:${hex};${light?'box-shadow:inset 0 0 0 1px #c8ccd4':''}"></span>${c}</button>`;
+        const soldOut=colorStock(current,c)<=0;
+        return `<button class="choice color-choice ${selection.color===c?'on':''}" ${soldOut?'disabled style="opacity:.35;cursor:not-allowed"':''} onclick="${soldOut?'':`setChoice('color','${c}')`}" title="${c}"><span class="swatch-dot" style="background:${hex};${light?'box-shadow:inset 0 0 0 1px #c8ccd4':''}"></span>${c}${soldOut?' (Sold Out)':''}</button>`;
       }).join("");
     }
     function renderPrintChoices(){return Object.keys(PRINTS).map(v=>`<button class="choice ${selection.prints.includes(v)?'on':''}" onclick="togglePrint('${v}')">${v} +${money(PRINTS[v])}</button>`).join("")}
@@ -289,11 +312,28 @@
     }
     function renderProductModal(){
       const i=PRODUCTS.indexOf(current);
-      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${selection.color}">${watermark()}</div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this tee</button><div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderChoices(Object.keys(SIZE_UPCHARGE),'size')}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><strong>${selection.qty}</strong><button onclick="changeQty(1)">+</button></div><div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button></div></div>`;
+      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${selection.color}">${watermark()}</div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this tee</button><div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderSizeChoices()}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><strong>${selection.qty}</strong><button onclick="changeQty(1)">+</button></div><div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button></div></div>`;
     }
-    function setChoice(key,value){selection[key]=value;renderProductModal()}
-    function changeQty(delta){selection.qty=Math.max(1,Math.min(12,selection.qty+delta));renderProductModal()}
-    function addToBag(){cart.push({productId:current.id,name:current.name,image:currentDisplayImage(current,PRODUCTS.indexOf(current)),...selection,total:productTotal()});updateCartCount();closeOverlay("product-overlay");openCart()}
+    function setChoice(key,value){
+      selection[key]=value;
+      if(key==='color'&&getStock(current,selection.color,selection.size)<=0){
+        const avail=Object.keys(SIZE_UPCHARGE).find(sz=>getStock(current,selection.color,sz)>0);
+        if(avail)selection.size=avail;
+      }
+      renderProductModal();
+    }
+    function changeQty(delta){
+      const stock=getStock(current,selection.color,selection.size);
+      const cap=stock===Infinity?12:Math.max(0,Math.min(12,stock));
+      selection.qty=Math.max(1,Math.min(cap||1,selection.qty+delta));
+      renderProductModal();
+    }
+    function addToBag(){
+      const stock=getStock(current,selection.color,selection.size);
+      if(stock<=0){alert(`${selection.color} — Size ${selection.size} is sold out.`);return}
+      if(selection.qty>stock){alert(`Only ${stock} left in ${selection.color} / Size ${selection.size}. Lowering quantity to match.`);selection.qty=stock;renderProductModal();return}
+      cart.push({productId:current.id,name:current.name,image:currentDisplayImage(current,PRODUCTS.indexOf(current)),...selection,total:productTotal()});updateCartCount();closeOverlay("product-overlay");openCart()
+    }
     function updateCartCount(){document.getElementById("cart-count").textContent=cart.reduce((n,i)=>n+i.qty,0)}
     function subtotal(){return cart.reduce((n,i)=>n+i.total,0)}
     function removeItem(index){cart.splice(index,1);updateCartCount();renderCart()}
@@ -356,10 +396,17 @@
           const items=cart.map(i=>({name:i.name,sku:i.productId,unit_amount:{currency_code:CURRENCY,value:(i.total/i.qty).toFixed(2)},quantity:String(i.qty),description:`${i.garment}, ${i.color}, Size ${i.size}`}));
           return actions.order.create({purchase_units:[{description:"Top 10 Tees",amount:{currency_code:CURRENCY,value:grandTotal().toFixed(2),breakdown:{item_total:{currency_code:CURRENCY,value:subtotal().toFixed(2)},shipping:{currency_code:CURRENCY,value:shippingFee().toFixed(2)},discount:{currency_code:CURRENCY,value:discountAmount().toFixed(2)}}},items}]});
         },
-        onApprove(data,actions){return actions.order.capture().then(details=>{if(details.status!=="COMPLETED")throw new Error("Payment was not completed");sendOrderToSheet(details.id);showSuccess(details.id)})},
+        onApprove(data,actions){return actions.order.capture().then(details=>{if(details.status!=="COMPLETED")throw new Error("Payment was not completed");decrementInventory(cart);sendOrderToSheet(details.id);saveSettings();showSuccess(details.id)})},
         onCancel(){alert("Payment was cancelled. Your bag is still here.")},
         onError(err){console.error(err);alert("PayPal could not complete the payment. No order has been marked paid. Please try again.")}
       }).render("#paypal-button-container");
+    }
+    function decrementInventory(items){
+      items.forEach(i=>{
+        const p=PRODUCTS.find(pp=>pp.id===i.productId);
+        if(!p||!p.inventory||!p.inventory[i.color]||typeof p.inventory[i.color][i.size]!=="number")return;
+        p.inventory[i.color][i.size]=Math.max(0,p.inventory[i.color][i.size]-i.qty);
+      });
     }
     function sendOrderToSheet(orderId){
       if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return;
@@ -418,12 +465,13 @@
       }
       const tabs=`<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
         <button class="choice ${manageView==='designs'?'on':''}" onclick="switchManageView('designs')">TOP 10 DESIGNS</button>
+        <button class="choice ${manageView==='inventory'?'on':''}" onclick="switchManageView('inventory')">INVENTORY</button>
         <button class="choice ${manageView==='gallery'?'on':''}" onclick="switchManageView('gallery')">PHOTO GALLERY</button>
         <button class="choice ${manageView==='shipping'?'on':''}" onclick="switchManageView('shipping')">SHIPPING</button>
         <button class="choice ${manageView==='discounts'?'on':''}" onclick="switchManageView('discounts')">DISCOUNT CODES</button>
         <a class="choice" href="template-builder.html" target="_blank" rel="noopener" style="text-decoration:none;margin-left:auto">TEMPLATE BUILDER ↗</a>
       </div>`;
-      body.innerHTML=tabs+(manageView==="designs"?renderDesignsTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():renderDiscountsTab());
+      body.innerHTML=tabs+(manageView==="designs"?renderDesignsTab():manageView==="inventory"?renderInventoryTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():renderDiscountsTab());
     }
     function switchManageView(view){manageView=view;renderManageBody()}
     function renderDesignsTab(){
@@ -473,6 +521,56 @@
           </div>
         </div>`;
       }).join("");
+    }
+    function renderInventoryTab(){
+      return `<div class="section-note" style="margin-bottom:14px">Set how many you have in stock, per color and size. Leave a box blank for unlimited (not tracked). Once a size hits 0, it shows as SOLD OUT on the site automatically — no other action needed. Hit <b>SAVE & GO LIVE</b> when done.</div>
+      <div style="margin-bottom:18px"><button class="add-bag" onclick="saveInventory()">SAVE &amp; GO LIVE</button><span id="inventory-save-msg" style="font-size:12px;color:var(--muted);margin-left:12px"></span></div>`+Object.keys(CITY_META).map(city=>renderInventoryCitySection(city)).join("");
+    }
+    function renderInventoryCitySection(city){
+      const list=PRODUCTS.filter(p=>p.city===city);
+      return `<div class="section-kicker" style="margin:22px 0 10px">${CITY_META[city].label.toUpperCase()} — TOP 10</div>`+list.map(p=>{
+        const enabledColors=(p.colors&&p.colors.length?p.colors:COLORS);
+        return `<div style="border-bottom:1px solid var(--line);padding:14px 0">
+          <div style="font:900 15px Barlow Condensed,sans-serif;color:var(--navy);margin-bottom:10px">${escapeXml(p.name)}</div>
+          ${enabledColors.map(c=>{
+            const hex=COLOR_HEX[c]||"#ccc";
+            return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;min-width:66px"><span style="width:11px;height:11px;border-radius:50%;background:${hex};display:inline-block;${c==='White'?'box-shadow:inset 0 0 0 1px #c8ccd4':''}"></span>${c}</span>
+              ${Object.keys(SIZE_UPCHARGE).map(sz=>{
+                const val=(p.inventory&&p.inventory[c]&&typeof p.inventory[c][sz]==="number")?p.inventory[c][sz]:"";
+                return `<label style="display:flex;flex-direction:column;align-items:center;font-size:9px;color:var(--muted);font-weight:800;gap:3px">${sz}<input id="inv-${p.id}-${c}-${sz}" type="number" min="0" step="1" value="${val}" placeholder="∞" style="width:46px;border:1px solid var(--line);padding:5px 3px;text-align:center;font-weight:700"></label>`;
+              }).join("")}
+            </div>`;
+          }).join("")}
+        </div>`;
+      }).join("");
+    }
+    function saveInventory(){
+      const msg=document.getElementById("inventory-save-msg");
+      if(msg)msg.textContent="Saving…";
+      PRODUCTS.forEach(p=>{
+        const enabledColors=(p.colors&&p.colors.length?p.colors:COLORS);
+        enabledColors.forEach(c=>{
+          Object.keys(SIZE_UPCHARGE).forEach(sz=>{
+            const input=document.getElementById(`inv-${p.id}-${c}-${sz}`);
+            if(!input)return;
+            const raw=input.value.trim();
+            if(raw===""){
+              if(p.inventory&&p.inventory[c])delete p.inventory[c][sz];
+              return;
+            }
+            const v=parseInt(raw,10);
+            if(isNaN(v)||v<0)return;
+            if(!p.inventory)p.inventory={};
+            if(!p.inventory[c])p.inventory[c]={};
+            p.inventory[c][sz]=v;
+          });
+        });
+      });
+      saveSettings().then(ok=>{
+        renderProducts();
+        if(msg)msg.textContent=ok?"Live — inventory updated for every visitor.":"Saved on this device, but couldn't reach Google Sheets — try again.";
+      });
     }
     function renderGalleryTab(){
       const cityOptions=["all",...Object.keys(CITY_META)];
@@ -803,6 +901,7 @@
         prices:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.price])),
         names:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.name])),
         colors:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.colors||COLORS])),
+        inventory:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.inventory||{}])),
         gallery:gallery.map(g=>({id:g.id,name:g.name,city:g.city||"all",season:g.season||"All-Season",addedAt:g.addedAt||0})),
         shippingPrice:SHIPPING_PRICE,
         freeShippingThreshold:FREE_SHIPPING_THRESHOLD,
@@ -828,6 +927,7 @@
         if(settings.prices){PRODUCTS.forEach(p=>{if(typeof settings.prices[p.id]==="number")p.price=settings.prices[p.id]})}
         if(settings.names){PRODUCTS.forEach(p=>{if(settings.names[p.id])p.name=settings.names[p.id]})}
         if(settings.colors){PRODUCTS.forEach(p=>{if(Array.isArray(settings.colors[p.id])&&settings.colors[p.id].length)p.colors=settings.colors[p.id]})}
+        if(settings.inventory){PRODUCTS.forEach(p=>{if(settings.inventory[p.id]&&typeof settings.inventory[p.id]==="object")p.inventory=settings.inventory[p.id]})}
         if(Array.isArray(settings.gallery))gallery=settings.gallery.map(g=>({id:g.id,name:g.name,dataUrl:"",city:g.city||"all",season:g.season||"All-Season",addedAt:g.addedAt||0}));
         if(typeof settings.shippingPrice==="number")SHIPPING_PRICE=settings.shippingPrice;
         if(typeof settings.freeShippingThreshold==="number")FREE_SHIPPING_THRESHOLD=settings.freeShippingThreshold;
