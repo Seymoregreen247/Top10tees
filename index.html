@@ -69,6 +69,7 @@
   <header class="site-header">
     <div class="brand"><div class="brand-mark">10</div><div><div class="brand-name">TOP 10 TEES</div></div></div>
     <div style="display:flex;gap:10px;align-items:center">
+    <button class="secondary" type="button" onclick="openWholesale()" style="padding:9px 16px;font-size:12px">WHOLESALE</button>
     <button class="cart-button" type="button" onclick="openCart()">BAG <span class="cart-count" id="cart-count">0</span></button>
     </div>
   </header>
@@ -98,7 +99,7 @@
     <div class="product-grid" id="product-grid"></div>
   </main>
 
-  <footer><div><div class="footer-brand">TOP 10 TEES</div><div class="footer-copy">© 2026 TOP 10 TEES, a Seymore Green project.<br>ALL RIGHTS RESERVED.</div><div class="footer-contact"><a href="tel:+18444739667">1-844-4-SEYMOR</a> · <a href="mailto:orders@seymoregreen.com">orders@seymoregreen.com</a><br>35 Poplar St, Roslindale, MA 02131<br><a href="policies.html">Privacy Policy</a> · <a href="policies.html#shipping">Shipping &amp; Returns</a> · <a href="policies.html#contact">Contact Us</a></div></div><div style="display:flex;align-items:center;gap:14px"><div class="stripes"><i></i><i></i><i></i></div><span id="secret-tap" onclick="secretTap()" aria-hidden="true">👟</span></div></footer>
+  <footer><div><div class="footer-brand">TOP 10 TEES</div><div class="footer-copy">© 2026 TOP 10 TEES, a Seymore Green project.<br>ALL RIGHTS RESERVED.</div><div class="footer-contact"><a href="tel:+18444739667">1-844-4-SEYMOR</a> · <a href="mailto:sales@seymoregreen.com">sales@seymoregreen.com</a><br>35 Poplar St, Roslindale, MA 02131<br><a href="policies.html">Privacy Policy</a> · <a href="policies.html#shipping">Shipping &amp; Returns</a> · <a href="policies.html#contact">Contact Us</a></div></div><div style="display:flex;align-items:center;gap:14px"><div class="stripes"><i></i><i></i><i></i></div><span id="secret-tap" onclick="secretTap()" aria-hidden="true">👟</span></div></footer>
 
   <div class="overlay" id="product-overlay" role="dialog" aria-modal="true">
     <div class="modal"><div class="modal-head"><div class="modal-title">BUILD YOUR TEE</div><button class="close" onclick="closeOverlay('product-overlay')" aria-label="Close">×</button></div><div class="modal-body" id="product-modal-body"></div></div>
@@ -116,6 +117,10 @@
     <div class="modal"><div class="modal-head"><div class="modal-title">MANAGE TOP 10 TEES</div><button class="close" onclick="closeOverlay('manage-overlay')" aria-label="Close">×</button></div><div class="modal-body" id="manage-body"></div></div>
   </div>
 
+  <div class="overlay" id="wholesale-overlay" role="dialog" aria-modal="true">
+    <div class="modal"><div class="modal-head"><div class="modal-title">WHOLESALE / BULK ORDERS</div><button class="close" onclick="closeOverlay('wholesale-overlay')" aria-label="Close">×</button></div><div class="modal-body" id="wholesale-body"></div></div>
+  </div>
+
   <script>
     /* ================================================================
        PAYPAL CONNECTION
@@ -126,7 +131,7 @@
     const CURRENCY = "USD";
     let SHIPPING_PRICE = 10;
     let FREE_SHIPPING_THRESHOLD = 99;
-    let WHOLESALE_TIERS=[{qty:12,price:30},{qty:24,price:27},{qty:36,price:24},{qty:48,price:21}];
+    let WHOLESALE_TIERS=[{qty:12,price:27},{qty:24,price:24},{qty:36,price:22},{qty:48,price:20}];
     function wholesaleTierFor(qty){
       let applicable=null;
       WHOLESALE_TIERS.slice().sort((a,b)=>a.qty-b.qty).forEach(t=>{if(qty>=t.qty)applicable=t});
@@ -322,7 +327,7 @@
     }
     function renderProductModal(){
       const i=PRODUCTS.indexOf(current);
-      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${selection.color}">${watermark()}</div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this tee</button><div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderSizeChoices()}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><input type="number" min="1" max="200" value="${selection.qty}" onchange="setQty(this.value)" style="width:56px;height:38px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:0;border-right:0;font-weight:900;font-size:15px"><button onclick="changeQty(1)">+</button></div>${renderWholesaleNote()}${renderPurchaseAction()}</div></div>`;
+      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${selection.color}">${watermark()}</div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this tee</button><div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderSizeChoices()}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><input type="number" min="1" max="${retailQtyCap()}" value="${selection.qty}" onchange="setQty(this.value)" style="width:56px;height:38px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:0;border-right:0;font-weight:900;font-size:15px"><button onclick="changeQty(1)">+</button></div>${renderPurchaseAction()}</div></div>`;
     }
     function setChoice(key,value){
       selection[key]=value;
@@ -332,82 +337,34 @@
       }
       renderProductModal();
     }
+    function retailQtyCap(){
+      const sorted=WHOLESALE_TIERS.slice().sort((a,b)=>a.qty-b.qty);
+      return sorted.length?sorted[0].qty-1:200;
+    }
     function changeQty(delta){
       const stock=getStock(current,selection.color,selection.size);
-      const cap=stock===Infinity?200:Math.max(0,Math.min(200,stock));
+      const ceiling=retailQtyCap();
+      const cap=stock===Infinity?ceiling:Math.max(0,Math.min(ceiling,stock));
       selection.qty=Math.max(1,Math.min(cap||1,selection.qty+delta));
       renderProductModal();
     }
     function setQty(value){
       const stock=getStock(current,selection.color,selection.size);
-      const cap=stock===Infinity?200:Math.max(0,Math.min(200,stock));
+      const ceiling=retailQtyCap();
+      const cap=stock===Infinity?ceiling:Math.max(0,Math.min(ceiling,stock));
       const v=parseInt(value,10);
       selection.qty=isNaN(v)?1:Math.max(1,Math.min(cap||1,v));
       renderProductModal();
     }
-    function renderWholesaleNote(){
+    function renderWholesaleTeaser(){
       const sorted=WHOLESALE_TIERS.slice().sort((a,b)=>a.qty-b.qty);
-      const activeTier=wholesaleTierFor(selection.qty);
-      const rows=sorted.map(t=>`<div style="display:flex;justify-content:space-between;padding:3px 0;${activeTier&&activeTier.qty===t.qty?'color:var(--red);font-weight:900':''}">${t.qty}+ shirts<span>${money(t.price)}/ea</span></div>`).join("");
-      return `<div style="border:1px dashed #aeb8c8;background:#f8f9fb;padding:10px 12px;margin-top:14px">
-        <div style="font:900 10px Inter,sans-serif;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px">BULK / WHOLESALE PRICING</div>
-        <div style="font-size:12px">${rows}</div>
-        ${activeTier?`<div style="font-size:11px;color:var(--red);font-weight:800;margin-top:6px">Estimated at ${money(activeTier.price)}/shirt — submit a request below to lock it in.</div>`:`<div style="font-size:11px;color:var(--muted);margin-top:6px">Order ${sorted[0].qty}+ of this design to unlock bulk pricing.</div>`}
-      </div>`;
-    }
-    function isWholesaleQty(){
-      const sorted=WHOLESALE_TIERS.slice().sort((a,b)=>a.qty-b.qty);
-      return sorted.length>0&&selection.qty>=sorted[0].qty;
+      if(!sorted.length)return "";
+      return `<div style="text-align:center;margin-top:12px;font-size:12px;color:var(--muted)">Need ${sorted[0].qty}+ of this design? <a href="#" onclick="event.preventDefault();closeOverlay('product-overlay');openWholesale(current&&current.id);" style="color:var(--red);font-weight:800">Check out Wholesale →</a></div>`;
     }
     function renderPurchaseAction(){
-      if(!isWholesaleQty()){
-        return `<div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button>`;
-      }
-      const tier=wholesaleTierFor(selection.qty);
-      return `<div class="selection-total">EST. TOTAL ${money(productTotal())} <span style="font-size:12px;color:var(--muted);font-weight:700">(subject to approval)</span></div>
-      <div style="border:2px solid var(--navy);padding:14px;margin-top:14px">
-        <div style="font:900 13px Barlow Condensed,sans-serif;color:var(--navy);letter-spacing:.5px;margin-bottom:8px">REQUEST WHOLESALE PRICING</div>
-        <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:12px">Bulk orders go through a quick approval process before production. Submit your info below — we'll follow up to confirm details and pricing. <b>Full payment is required upfront before production begins once approved.</b></div>
-        <div class="field" style="margin-bottom:8px"><input id="wh-name" placeholder="Full name / business name" style="width:100%;border:1px solid var(--line);padding:10px"></div>
-        <div class="field" style="margin-bottom:8px"><input id="wh-email" type="email" placeholder="Email" style="width:100%;border:1px solid var(--line);padding:10px"></div>
-        <div class="field" style="margin-bottom:8px"><input id="wh-phone" placeholder="Phone" style="width:100%;border:1px solid var(--line);padding:10px"></div>
-        <div class="field" style="margin-bottom:8px"><input id="wh-company" placeholder="Company / organization (optional)" style="width:100%;border:1px solid var(--line);padding:10px"></div>
-        <div class="field" style="margin-bottom:10px"><textarea id="wh-notes" rows="2" placeholder="Anything else we should know? (deadline, logo, etc.)" style="width:100%;border:1px solid var(--line);padding:10px"></textarea></div>
-        <button class="add-bag" onclick="submitWholesaleRequest()">SUBMIT WHOLESALE REQUEST</button>
-        <div id="wholesale-request-msg" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
-      </div>`;
-    }
-    function submitWholesaleRequest(){
-      const name=document.getElementById("wh-name")?.value.trim();
-      const email=document.getElementById("wh-email")?.value.trim();
-      const phone=document.getElementById("wh-phone")?.value.trim();
-      const company=document.getElementById("wh-company")?.value.trim()||"";
-      const notes=document.getElementById("wh-notes")?.value.trim()||"";
-      const msg=document.getElementById("wholesale-request-msg");
-      if(!name||!phone||!email){if(msg)msg.textContent="Please fill in name, email, and phone.";return}
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(msg)msg.textContent="Please enter a valid email.";return}
-      const tier=wholesaleTierFor(selection.qty);
-      const payload={
-        type:"wholesale",
-        name,email,phone,company,notes,
-        productId:current.id,
-        productName:current.name,
-        color:selection.color,
-        size:selection.size,
-        qty:selection.qty,
-        estimatedUnitPrice:tier?tier.price:current.price,
-        estimatedTotal:productTotal(),
-        submittedAt:new Date().toLocaleString()
-      };
-      if(msg)msg.textContent="Submitting…";
-      fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload)})
-        .then(()=>{
-          document.getElementById("product-modal-body").innerHTML=`<div class="success"><div class="success-icon">✓</div><h3>REQUEST SENT</h3><p>Thanks, ${escapeXml(name)} — we'll review your bulk order request and follow up within 1 business day to confirm pricing and next steps.</p><p style="margin-top:10px"><b>Note:</b> full payment is required upfront before production begins once your order is approved.</p><button class="primary" onclick="closeOverlay('product-overlay')">DONE</button></div>`;
-        })
-        .catch(()=>{if(msg)msg.textContent="Something went wrong sending your request — please try again or contact us directly."});
+      return `<div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button>${renderWholesaleTeaser()}`;
     }
     function addToBag(){
-      if(isWholesaleQty()){alert("This quantity requires a wholesale request — please use the form below instead of adding to bag.");return}
       const stock=getStock(current,selection.color,selection.size);
       if(stock<=0){alert(`${selection.color} — Size ${selection.size} is sold out.`);return}
       if(selection.qty>stock){alert(`Only ${stock} left in ${selection.color} / Size ${selection.size}. Lowering quantity to match.`);selection.qty=stock;renderProductModal();return}
@@ -523,6 +480,64 @@
     let PHOTO_MAP={};
     let discountCodes=[];
     let appliedDiscount=null;
+    function openWholesale(preselectId){
+      renderWholesaleBody(preselectId||(PRODUCTS[0]&&PRODUCTS[0].id));
+      openOverlay("wholesale-overlay");
+    }
+    function renderWholesaleBody(selectedId){
+      const sorted=WHOLESALE_TIERS.slice().sort((a,b)=>a.qty-b.qty);
+      const rows=sorted.map(t=>`<div style="display:flex;justify-content:space-between;padding:3px 0">${t.qty}+ shirts<span>${money(t.price)}/ea</span></div>`).join("");
+      const options=PRODUCTS.map(p=>`<option value="${p.id}" ${p.id===selectedId?'selected':''}>${escapeXml(p.name)} (${CITY_META[p.city]?CITY_META[p.city].label:p.city})</option>`).join("");
+      document.getElementById("wholesale-body").innerHTML=`
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px">Bulk orders go through a quick approval process before production starts. Fill this out and we'll follow up to confirm details and pricing. <b>Full payment is required upfront before production begins once approved.</b></div>
+        <div style="border:1px dashed #aeb8c8;background:#f8f9fb;padding:10px 12px;margin-bottom:16px">
+          <div style="font:900 10px Inter,sans-serif;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px">REFERENCE PRICING</div>
+          <div style="font-size:12px">${rows}</div>
+        </div>
+        <div class="choice-title">DESIGN</div>
+        <select id="wh-design" style="width:100%;border:1px solid var(--line);padding:10px;margin-bottom:12px;font-size:14px">${options}</select>
+        <div class="choice-title">QUANTITY</div>
+        <input id="wh-qty" type="number" min="${sorted.length?sorted[0].qty:1}" value="${sorted.length?sorted[0].qty:12}" style="width:100%;border:1px solid var(--line);padding:10px;margin-bottom:12px;font-size:14px">
+        <div class="choice-title">YOUR INFO</div>
+        <div style="margin-bottom:8px"><input id="wh-name" placeholder="Full name / business name" style="width:100%;border:1px solid var(--line);padding:10px"></div>
+        <div style="margin-bottom:8px"><input id="wh-email" type="email" placeholder="Email" style="width:100%;border:1px solid var(--line);padding:10px"></div>
+        <div style="margin-bottom:8px"><input id="wh-phone" placeholder="Phone" style="width:100%;border:1px solid var(--line);padding:10px"></div>
+        <div style="margin-bottom:8px"><input id="wh-company" placeholder="Company / organization (optional)" style="width:100%;border:1px solid var(--line);padding:10px"></div>
+        <div style="margin-bottom:14px"><textarea id="wh-notes" rows="2" placeholder="Anything else we should know? (deadline, colors, logo, etc.)" style="width:100%;border:1px solid var(--line);padding:10px"></textarea></div>
+        <button class="add-bag" onclick="submitWholesaleRequest()">SUBMIT WHOLESALE REQUEST</button>
+        <div id="wholesale-request-msg" style="font-size:11px;color:var(--muted);margin-top:8px"></div>`;
+    }
+    function submitWholesaleRequest(){
+      const designId=document.getElementById("wh-design")?.value;
+      const product=PRODUCTS.find(p=>p.id===designId);
+      const qty=parseInt(document.getElementById("wh-qty")?.value,10);
+      const name=document.getElementById("wh-name")?.value.trim();
+      const email=document.getElementById("wh-email")?.value.trim();
+      const phone=document.getElementById("wh-phone")?.value.trim();
+      const company=document.getElementById("wh-company")?.value.trim()||"";
+      const notes=document.getElementById("wh-notes")?.value.trim()||"";
+      const msg=document.getElementById("wholesale-request-msg");
+      if(!name||!phone||!email){if(msg)msg.textContent="Please fill in name, email, and phone.";return}
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(msg)msg.textContent="Please enter a valid email.";return}
+      if(isNaN(qty)||qty<1){if(msg)msg.textContent="Please enter a valid quantity.";return}
+      const tier=wholesaleTierFor(qty);
+      const payload={
+        type:"wholesale",
+        name,email,phone,company,notes,
+        productId:product?product.id:designId,
+        productName:product?product.name:designId,
+        qty,
+        estimatedUnitPrice:tier?tier.price:(product?product.price:null),
+        estimatedTotal:tier?tier.price*qty:null,
+        submittedAt:new Date().toLocaleString()
+      };
+      if(msg)msg.textContent="Submitting…";
+      fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload)})
+        .then(()=>{
+          document.getElementById("wholesale-body").innerHTML=`<div class="success"><div class="success-icon">✓</div><h3>REQUEST SENT</h3><p>Thanks, ${escapeXml(name)} — we'll review your bulk order request and follow up within 1 business day to confirm pricing and next steps.</p><p style="margin-top:10px"><b>Note:</b> full payment is required upfront before production begins once your order is approved.</p><button class="primary" onclick="closeOverlay('wholesale-overlay')">DONE</button></div>`;
+        })
+        .catch(()=>{if(msg)msg.textContent="Something went wrong sending your request — please try again or contact us directly."});
+    }
     function openManage(){renderManageBody();openOverlay("manage-overlay")}
     let secretTaps=[];
     function secretTap(){
