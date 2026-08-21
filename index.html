@@ -651,10 +651,14 @@
             <div>
               <div style="font:900 11px Inter,sans-serif;letter-spacing:1px;color:var(--muted);margin-bottom:4px">${CITY_META[city].label.toUpperCase()} NO. ${String(i+1).padStart(2,"0")}</div>
               <input id="name-input-${p.id}" value="${escapeXml(p.name)}" style="width:100%;max-width:260px;border:1px solid var(--line);padding:6px 8px;font:900 14px Barlow Condensed,sans-serif;color:var(--navy);margin-bottom:6px">
-              <div style="display:flex;align-items:center;gap:6px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
                 <span style="font-weight:900">$</span>
                 <input id="price-input-${p.id}" type="number" min="0" step="0.5" value="${p.price}" style="width:80px;border:1px solid var(--line);padding:6px 8px;font-weight:800">
               </div>
+              <label style="display:flex;align-items:center;gap:6px;font:800 11px Inter,sans-serif;letter-spacing:.5px;color:${p.locked?'var(--red)':'var(--muted)'};cursor:pointer">
+                <input type="checkbox" id="locked-input-${p.id}" ${p.locked?"checked":""} style="width:16px;height:16px">
+                &#128274; LOCKED — requires ${(UNLOCK_CODES[city]||"unlock code").toUpperCase()} to view
+              </label>
             </div>
           </div>
           <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin-bottom:8px">COLOR OPTIONS — check the colors this design comes in, and give each one its own photo so shoppers see the right shirt when they pick a color</div>
@@ -1050,6 +1054,7 @@
       PRODUCTS.forEach(p=>{
         const nameInput=document.getElementById(`name-input-${p.id}`);
         const priceInput=document.getElementById(`price-input-${p.id}`);
+        const lockedInput=document.getElementById(`locked-input-${p.id}`);
         if(nameInput){
           const v=nameInput.value.trim();
           if(v)p.name=v; else hadError=true;
@@ -1058,6 +1063,7 @@
           const v=parseFloat(priceInput.value);
           if(!isNaN(v)&&v>=0)p.price=v; else hadError=true;
         }
+        if(lockedInput){p.locked=!!lockedInput.checked;}
       });
       const ok=await saveSettings();
       renderProducts();
@@ -1099,6 +1105,7 @@
         names:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.name])),
         colors:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.colors||COLORS])),
         inventory:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.inventory||{}])),
+        locked:Object.fromEntries(PRODUCTS.map(p=>[p.id,!!p.locked])),
         gallery:gallery.map(g=>({id:g.id,name:g.name,city:g.city||"all",season:g.season||"All-Season",addedAt:g.addedAt||0})),
         shippingPrice:SHIPPING_PRICE,
         freeShippingThreshold:FREE_SHIPPING_THRESHOLD,
@@ -1126,6 +1133,7 @@
         if(settings.names){PRODUCTS.forEach(p=>{if(settings.names[p.id])p.name=settings.names[p.id]})}
         if(settings.colors){PRODUCTS.forEach(p=>{if(Array.isArray(settings.colors[p.id])&&settings.colors[p.id].length)p.colors=settings.colors[p.id]})}
         if(settings.inventory){PRODUCTS.forEach(p=>{if(settings.inventory[p.id]&&typeof settings.inventory[p.id]==="object")p.inventory=settings.inventory[p.id]})}
+        if(settings.locked){PRODUCTS.forEach(p=>{if(typeof settings.locked[p.id]==="boolean")p.locked=settings.locked[p.id]})}
         if(Array.isArray(settings.gallery))gallery=settings.gallery.map(g=>({id:g.id,name:g.name,dataUrl:"",city:g.city||"all",season:g.season||"All-Season",addedAt:g.addedAt||0}));
         if(typeof settings.shippingPrice==="number")SHIPPING_PRICE=settings.shippingPrice;
         if(typeof settings.freeShippingThreshold==="number")FREE_SHIPPING_THRESHOLD=settings.freeShippingThreshold;
