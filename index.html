@@ -57,6 +57,17 @@
     .share-menu{position:fixed;z-index:200;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);min-width:190px;padding:6px;display:flex;flex-direction:column}.share-menu a,.share-menu button{display:flex;align-items:center;gap:9px;padding:10px 11px;font:700 13px Inter,sans-serif;color:var(--ink);text-decoration:none;background:transparent;border:0;text-align:left;width:100%}.share-menu a:hover,.share-menu button:hover{background:var(--cream)}
     #share-toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:300;background:var(--navy);color:#fff;padding:12px 20px;font:800 12px Inter,sans-serif;letter-spacing:.6px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.22s}#share-toast.show{opacity:1;transform:translate(-50%,0)}
     .city-bar{display:flex;justify-content:center;padding:11px 14px;background:var(--cream);border-bottom:1px solid var(--line)}
+    #unlock-bar{display:none;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#10131a;border-bottom:1px solid var(--line)}
+    #unlock-bar .unlock-label{color:#fff;font:800 11px Inter,sans-serif;letter-spacing:.6px;text-transform:uppercase}
+    #unlock-bar input{border:1px solid #444;background:#fff;padding:8px 10px;font:700 12px Inter,sans-serif;width:150px;letter-spacing:1px}
+    #unlock-bar .choice{background:var(--red);color:#fff;border:0;padding:8px 16px}
+    #unlock-bar .unlock-msg{color:#9fb0ce;font:600 11px Inter,sans-serif;width:100%;text-align:center}
+    .product-card.is-locked{cursor:pointer}
+    .product-card.is-locked .art-wrap{position:relative}
+    .lock-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(16,19,26,.35);color:#fff;text-align:center}
+    .lock-icon{font-size:34px;margin-bottom:6px}
+    .lock-label{font:900 13px Inter,sans-serif;letter-spacing:1.5px}
+    .lock-sub{font:700 11px Inter,sans-serif;color:#e7ecf5;margin-top:4px}
     .city-toggle{display:flex;gap:0;border:1px solid var(--navy);overflow:hidden}
     .city-toggle button{border:0;background:#fff;color:var(--navy);padding:9px 22px;font:800 12px Inter,sans-serif;letter-spacing:1.4px;text-transform:uppercase}
     .city-toggle button.on{background:var(--navy);color:#fff}
@@ -66,6 +77,7 @@
 <body>
   <div class="announcement">Ten designs. Built for the culture.</div>
   <div class="city-bar"><div class="city-toggle" id="city-toggle"></div></div>
+  <div id="unlock-bar"></div>
   <header class="site-header">
     <div class="brand"><div class="brand-mark">10</div><div><div class="brand-name">TOP 10 TEES</div></div></div>
     <div style="display:flex;gap:10px;align-items:center">
@@ -173,6 +185,38 @@
       boston:{label:"Boston",badge:"BOSTON EDITION",sub:"Find the tee that speaks your language. Pick your design, choose your color and size, and make it yours — Boston made."},
       detroit:{label:"Detroit",badge:"DETROIT EDITION",sub:"Straight off the D. Pick your design, choose your color and size, and make it yours — Detroit made."}
     };
+
+    /* ================================================================
+       LOCKED DESIGN UNLOCK CODES
+       To lock a specific product, add locked:true to its object above
+       in the PRODUCTS array. Give a customer the code for that
+       product's city and they can unlock every locked design in that
+       city by entering it once — remembered on their device via
+       localStorage so they don't re-enter it every visit.
+       ================================================================ */
+    const UNLOCK_CODES={boston:"T617",detroit:"T313"};
+    function unlockedCities(){
+      try{return JSON.parse(localStorage.getItem("t10t_unlocked")||"{}");}catch(e){return {};}
+    }
+    function isCityUnlocked(city){return !!unlockedCities()[city];}
+    function isProductLocked(p){return !!p.locked && !isCityUnlocked(p.city);}
+    function submitUnlockCode(inputId,msgId){
+      const input=document.getElementById(inputId);
+      const msg=document.getElementById(msgId);
+      const code=(input&&input.value||"").trim().toUpperCase();
+      const city=currentCity;
+      const expected=(UNLOCK_CODES[city]||"").toUpperCase();
+      if(!code){if(msg)msg.textContent="Enter a code first.";return;}
+      if(expected&&code===expected){
+        const u=unlockedCities();u[city]=true;
+        try{localStorage.setItem("t10t_unlocked",JSON.stringify(u));}catch(e){}
+        if(msg){msg.textContent="Unlocked! Enjoy the exclusive drop.";msg.style.color="var(--red)";}
+        if(input)input.value="";
+        renderProducts();
+      }else{
+        if(msg){msg.textContent="That code didn't match. Check with whoever gave it to you.";msg.style.color="var(--muted)";}
+      }
+    }
     let currentCity=(function(){
       try{
         const p=new URLSearchParams(window.location.search).get("city");
@@ -274,8 +318,24 @@
 
     function renderProducts(){
       const list=PRODUCTS.filter(p=>p.city===currentCity);
-      document.getElementById("product-grid").innerHTML=list.map((p,displayI)=>{const i=PRODUCTS.indexOf(p);return `<article class="product-card" role="button" tabindex="0" aria-label="Choose ${escapeXml(p.name)}" onclick="chooseProduct(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseProduct(${i})}"><div class="rank">NO. ${String(displayI+1).padStart(2,"0")}</div><button class="share-btn" onclick="shareProduct(${i},event)" aria-label="Share ${escapeXml(p.name)}" title="Share">${shareIcon()}</button><div class="art-wrap" oncontextmenu="return false"><img src="${productArt(p,i)}" alt="${escapeXml(p.name)}" loading="eager" decoding="async" fetchpriority="high">${watermark()}</div><div class="product-info"><div class="product-name">${escapeXml(p.name)}</div><div class="product-tag">${escapeXml(p.tag)}</div><div class="product-bottom"><div class="price">FROM ${money(p.price)}</div><button class="choose" onclick="event.stopPropagation();chooseProduct(${i})">Choose</button></div></div></article>`;}).join("");
-      renderCityToggle();renderCityChrome();
+      document.getElementById("product-grid").innerHTML=list.map((p,displayI)=>{
+        const i=PRODUCTS.indexOf(p);
+        const locked=isProductLocked(p);
+        const cardOnClick=locked?`focusUnlockInput()`:`chooseProduct(${i})`;
+        return `<article class="product-card ${locked?'is-locked':''}" role="button" tabindex="0" aria-label="${locked?'Locked design':'Choose '+escapeXml(p.name)}" onclick="${cardOnClick}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${cardOnClick}}"><div class="rank">NO. ${String(displayI+1).padStart(2,"0")}</div>${locked?'':`<button class="share-btn" onclick="shareProduct(${i},event)" aria-label="Share ${escapeXml(p.name)}" title="Share">${shareIcon()}</button>`}<div class="art-wrap" oncontextmenu="return false"><img src="${productArt(p,i)}" alt="${escapeXml(p.name)}" loading="eager" decoding="async" fetchpriority="high" style="${locked?'filter:blur(14px) grayscale(60%);transform:scale(1.08)':''}">${locked?'':watermark()}${locked?'<div class=\"lock-overlay\"><div class=\"lock-icon\">&#128274;</div><div class=\"lock-label\">LOCKED DESIGN</div><div class=\"lock-sub\">Enter your code to unlock</div></div>':''}</div><div class="product-info"><div class="product-name">${locked?'???':escapeXml(p.name)}</div><div class="product-tag">${locked?'Exclusive Access Only':escapeXml(p.tag)}</div><div class="product-bottom"><div class="price">${locked?'&nbsp;':`FROM ${money(p.price)}`}</div><button class="choose" onclick="event.stopPropagation();${cardOnClick}">${locked?'Unlock':'Choose'}</button></div></div></article>`;
+      }).join("");
+      renderCityToggle();renderCityChrome();renderUnlockBar();
+    }
+    function focusUnlockInput(){
+      const el=document.getElementById("unlock-code-input");
+      if(el){el.focus();el.scrollIntoView({behavior:"smooth",block:"center"});}
+    }
+    function renderUnlockBar(){
+      const el=document.getElementById("unlock-bar");if(!el)return;
+      const hasLocked=PRODUCTS.some(p=>p.city===currentCity&&p.locked);
+      if(!hasLocked||isCityUnlocked(currentCity)){el.style.display="none";return;}
+      el.style.display="flex";
+      el.innerHTML=`<span class="unlock-label">Have an unlock code?</span><input id="unlock-code-input" placeholder="ENTER CODE" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')submitUnlockCode('unlock-code-input','unlock-code-msg')"><button class="choice" onclick="submitUnlockCode('unlock-code-input','unlock-code-msg')">UNLOCK</button><span id="unlock-code-msg" class="unlock-msg"></span>`;
     }
     function renderCityToggle(){
       const el=document.getElementById("city-toggle");if(!el)return;
@@ -294,6 +354,8 @@
       renderProducts();
     }
     function chooseProduct(index){
+      const target=PRODUCTS[index];
+      if(target&&isProductLocked(target)){focusUnlockInput();return;}
       current=PRODUCTS[index];const firstColor=(current.colors&&current.colors.length?current.colors:COLORS)[0];
       let size="L";
       if(getStock(current,firstColor,size)<=0){
