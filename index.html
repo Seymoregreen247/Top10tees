@@ -194,7 +194,7 @@
        city by entering it once — remembered on their device via
        localStorage so they don't re-enter it every visit.
        ================================================================ */
-    const UNLOCK_CODES={boston:"T617",detroit:"T313"};
+    const UNLOCK_CODES={boston:"KEY617",detroit:"KEY313"};
     function unlockedCities(){
       try{return JSON.parse(localStorage.getItem("t10t_unlocked")||"{}");}catch(e){return {};}
     }
