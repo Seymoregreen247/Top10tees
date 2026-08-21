@@ -187,34 +187,32 @@
     };
 
     /* ================================================================
-       LOCKED DESIGN UNLOCK CODES
-       To lock a specific product, add locked:true to its object above
-       in the PRODUCTS array. Give a customer the code for that
-       product's city and they can unlock every locked design in that
-       city by entering it once — remembered on their device via
-       localStorage so they don't re-enter it every visit.
+       PER-DESIGN UNLOCK CODES
+       Each locked design has its own unique code (set per-design in the
+       admin Designs tab). A customer who has one design's code can
+       unlock ONLY that design — not the whole city, not the whole app.
+       True exclusivity: knowing the code for one drop doesn't open
+       any other locked drop.
        ================================================================ */
-    const UNLOCK_CODES={boston:"KEY617",detroit:"KEY313"};
-    function unlockedCities(){
-      try{return JSON.parse(localStorage.getItem("t10t_unlocked")||"{}");}catch(e){return {};}
+    function unlockedProducts(){
+      try{return JSON.parse(localStorage.getItem("t10t_unlocked_products")||"{}");}catch(e){return {};}
     }
-    function isCityUnlocked(city){return !!unlockedCities()[city];}
-    function isProductLocked(p){return !!p.locked && !isCityUnlocked(p.city);}
+    function isProductLocked(p){return !!p.locked && !unlockedProducts()[p.id];}
     function submitUnlockCode(inputId,msgId){
       const input=document.getElementById(inputId);
       const msg=document.getElementById(msgId);
       const code=(input&&input.value||"").trim().toUpperCase();
-      const city=currentCity;
-      const expected=(UNLOCK_CODES[city]||"").toUpperCase();
       if(!code){if(msg)msg.textContent="Enter a code first.";return;}
-      if(expected&&code===expected){
-        const u=unlockedCities();u[city]=true;
-        try{localStorage.setItem("t10t_unlocked",JSON.stringify(u));}catch(e){}
-        if(msg){msg.textContent="Unlocked! Enjoy the exclusive drop.";msg.style.color="var(--red)";}
+      const match=PRODUCTS.find(p=>p.locked&&p.code&&p.code.toUpperCase()===code);
+      if(match){
+        const u=unlockedProducts();u[match.id]=true;
+        try{localStorage.setItem("t10t_unlocked_products",JSON.stringify(u));}catch(e){}
+        if(match.city!==currentCity)currentCity=match.city;
+        if(msg){msg.textContent="Unlocked — welcome to the club.";msg.style.color="var(--red)";}
         if(input)input.value="";
         renderProducts();
       }else{
-        if(msg){msg.textContent="That code didn't match. Check with whoever gave it to you.";msg.style.color="var(--muted)";}
+        if(msg){msg.textContent="That code didn't match any design. Double-check with whoever gave it to you.";msg.style.color="var(--muted)";}
       }
     }
     let currentCity=(function(){
@@ -332,10 +330,10 @@
     }
     function renderUnlockBar(){
       const el=document.getElementById("unlock-bar");if(!el)return;
-      const hasLocked=PRODUCTS.some(p=>p.city===currentCity&&p.locked);
-      if(!hasLocked||isCityUnlocked(currentCity)){el.style.display="none";return;}
+      const hasLocked=PRODUCTS.some(p=>p.city===currentCity&&isProductLocked(p));
+      if(!hasLocked){el.style.display="none";return;}
       el.style.display="flex";
-      el.innerHTML=`<span class="unlock-label">Have an unlock code?</span><input id="unlock-code-input" placeholder="ENTER CODE" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')submitUnlockCode('unlock-code-input','unlock-code-msg')"><button class="choice" onclick="submitUnlockCode('unlock-code-input','unlock-code-msg')">UNLOCK</button><span id="unlock-code-msg" class="unlock-msg"></span>`;
+      el.innerHTML=`<span class="unlock-label">Have an exclusive code?</span><input id="unlock-code-input" placeholder="ENTER CODE" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')submitUnlockCode('unlock-code-input','unlock-code-msg')"><button class="choice" onclick="submitUnlockCode('unlock-code-input','unlock-code-msg')">UNLOCK</button><span id="unlock-code-msg" class="unlock-msg"></span>`;
     }
     function renderCityToggle(){
       const el=document.getElementById("city-toggle");if(!el)return;
@@ -655,10 +653,11 @@
                 <span style="font-weight:900">$</span>
                 <input id="price-input-${p.id}" type="number" min="0" step="0.5" value="${p.price}" style="width:80px;border:1px solid var(--line);padding:6px 8px;font-weight:800">
               </div>
-              <label style="display:flex;align-items:center;gap:6px;font:800 11px Inter,sans-serif;letter-spacing:.5px;color:${p.locked?'var(--red)':'var(--muted)'};cursor:pointer">
-                <input type="checkbox" id="locked-input-${p.id}" ${p.locked?"checked":""} style="width:16px;height:16px">
-                &#128274; LOCKED — requires ${(UNLOCK_CODES[city]||"unlock code").toUpperCase()} to view
+              <label style="display:flex;align-items:center;gap:6px;font:800 11px Inter,sans-serif;letter-spacing:.5px;color:${p.locked?'var(--red)':'var(--muted)'};cursor:pointer;margin-bottom:6px">
+                <input type="checkbox" id="locked-input-${p.id}" ${p.locked?"checked":""} onchange="document.getElementById('code-input-${p.id}').style.display=this.checked?'inline-block':'none'" style="width:16px;height:16px">
+                &#128274; LOCKED — exclusive, needs its own code to unlock
               </label>
+              <input id="code-input-${p.id}" placeholder="e.g. VIP2026" value="${escapeXml(p.code||'')}" style="display:${p.locked?'inline-block':'none'};width:140px;border:1px solid var(--line);padding:6px 8px;font:800 12px Inter,sans-serif;text-transform:uppercase;letter-spacing:1px">
             </div>
           </div>
           <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin-bottom:8px">COLOR OPTIONS — check the colors this design comes in, and give each one its own photo so shoppers see the right shirt when they pick a color</div>
@@ -1055,6 +1054,7 @@
         const nameInput=document.getElementById(`name-input-${p.id}`);
         const priceInput=document.getElementById(`price-input-${p.id}`);
         const lockedInput=document.getElementById(`locked-input-${p.id}`);
+        const codeInput=document.getElementById(`code-input-${p.id}`);
         if(nameInput){
           const v=nameInput.value.trim();
           if(v)p.name=v; else hadError=true;
@@ -1064,6 +1064,11 @@
           if(!isNaN(v)&&v>=0)p.price=v; else hadError=true;
         }
         if(lockedInput){p.locked=!!lockedInput.checked;}
+        if(codeInput){
+          const v=codeInput.value.trim();
+          if(p.locked&&!v)hadError=true;
+          p.code=v;
+        }
       });
       const ok=await saveSettings();
       renderProducts();
@@ -1106,6 +1111,7 @@
         colors:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.colors||COLORS])),
         inventory:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.inventory||{}])),
         locked:Object.fromEntries(PRODUCTS.map(p=>[p.id,!!p.locked])),
+        unlockCodes:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.code||""])),
         gallery:gallery.map(g=>({id:g.id,name:g.name,city:g.city||"all",season:g.season||"All-Season",addedAt:g.addedAt||0})),
         shippingPrice:SHIPPING_PRICE,
         freeShippingThreshold:FREE_SHIPPING_THRESHOLD,
@@ -1134,6 +1140,7 @@
         if(settings.colors){PRODUCTS.forEach(p=>{if(Array.isArray(settings.colors[p.id])&&settings.colors[p.id].length)p.colors=settings.colors[p.id]})}
         if(settings.inventory){PRODUCTS.forEach(p=>{if(settings.inventory[p.id]&&typeof settings.inventory[p.id]==="object")p.inventory=settings.inventory[p.id]})}
         if(settings.locked){PRODUCTS.forEach(p=>{if(typeof settings.locked[p.id]==="boolean")p.locked=settings.locked[p.id]})}
+        if(settings.unlockCodes){PRODUCTS.forEach(p=>{if(typeof settings.unlockCodes[p.id]==="string")p.code=settings.unlockCodes[p.id]})}
         if(Array.isArray(settings.gallery))gallery=settings.gallery.map(g=>({id:g.id,name:g.name,dataUrl:"",city:g.city||"all",season:g.season||"All-Season",addedAt:g.addedAt||0}));
         if(typeof settings.shippingPrice==="number")SHIPPING_PRICE=settings.shippingPrice;
         if(typeof settings.freeShippingThreshold==="number")FREE_SHIPPING_THRESHOLD=settings.freeShippingThreshold;
