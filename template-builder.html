@@ -124,8 +124,9 @@
 const COLORS = [
   {id:"black", label:"Black", fill:"#101418", stroke:"#4a4f58"},
   {id:"white", label:"White", fill:"#ffffff", stroke:"#071d49"},
-  {id:"navy",  label:"Navy",  fill:"#0b1f3a", stroke:"#33507e"},
-  {id:"gray",  label:"Gray",  fill:"#b6b6b6", stroke:"#8b8b8b"}
+  {id:"gray",  label:"Gray",  fill:"#b6b6b6", stroke:"#8b8b8b"},
+  {id:"red",   label:"Red",   fill:"#d71936", stroke:"#8f0f24"},
+  {id:"blue",  label:"Blue",  fill:"#123e8c", stroke:"#0b2a63"}
 ];
 const EXPORT_SIZE = 4500; // final print/upload resolution, square to match the app's product tiles
 const VB = 900; // silhouette path coordinate space
@@ -137,7 +138,7 @@ let logoImg = null;
 let logoName = "logo";
 let activeColorId = "black";
 let scalePct = 100, offX = 0, offY = 0;
-let checked = {black:true, white:true, navy:true, gray:true};
+let checked = {black:true, white:true, gray:true, red:true, blue:true};
 
 function drawShirt(ctx, size, color){
   const s = size / VB;
