@@ -633,7 +633,6 @@
         <button class="choice ${manageView==='shipping'?'on':''}" onclick="switchManageView('shipping')">SHIPPING</button>
         <button class="choice ${manageView==='wholesale'?'on':''}" onclick="switchManageView('wholesale')">WHOLESALE</button>
         <button class="choice ${manageView==='discounts'?'on':''}" onclick="switchManageView('discounts')">DISCOUNT CODES</button>
-        <a class="choice" href="template-builder.html" target="_blank" rel="noopener" style="text-decoration:none;margin-left:auto">TEMPLATE BUILDER ↗</a>
       </div>`;
       body.innerHTML=tabs+(manageView==="designs"?renderDesignsTab():manageView==="inventory"?renderInventoryTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():manageView==="wholesale"?renderWholesaleTab():renderDiscountsTab());
     }
