@@ -230,6 +230,7 @@
     })();
 
     const SIZE_UPCHARGE={S:0,M:0,L:0,XL:0,"2XL":3,"3XL":3,"4XL":5,"5XL":5};
+    const HOODIE_SIZE_UPCHARGE={S:0,M:0,L:0,XL:0,"2XL":5,"3XL":10,"4XL":15,"5XL":20};
     function getStock(product,color,size){
       if(!product||!product.inventory||!product.inventory[color]||typeof product.inventory[color][size]!=="number")return Infinity;
       return product.inventory[color][size];
@@ -317,7 +318,7 @@
     }
     function money(n){return "$"+Number(n).toFixed(2)}
     function printsCost(){return selection.prints.reduce((n,p)=>n+(PRINTS[p]||0),0)}
-    function hoodieCost(){return selection.hoodie&&selection.hoodie.enabled?HOODIE_PRICE:0}
+    function hoodieCost(){return selection.hoodie&&selection.hoodie.enabled?HOODIE_PRICE+(HOODIE_SIZE_UPCHARGE[selection.hoodie.size]||0):0}
     function productTotal(){
       const tier=wholesaleTierFor(selection.qty);
       const base=tier?tier.price:current.price;
@@ -404,7 +405,7 @@
       }).join("");
     }
     function renderHoodieSizeChoices(){
-      return Object.keys(SIZE_UPCHARGE).map(v=>`<button class="choice ${selection.hoodie.size===v?'on':''}" onclick="setHoodieChoice('size','${v}')">${v}</button>`).join("");
+      return Object.keys(HOODIE_SIZE_UPCHARGE).map(v=>`<button class="choice ${selection.hoodie.size===v?'on':''}" onclick="setHoodieChoice('size','${v}')">${v}${HOODIE_SIZE_UPCHARGE[v]?` +${money(HOODIE_SIZE_UPCHARGE[v])}`:''}</button>`).join("");
     }
     function toggleHoodie(){
       if(!selection.hoodie)selection.hoodie={enabled:false,color:HOODIE_COLORS[0]||"",size:"L"};
