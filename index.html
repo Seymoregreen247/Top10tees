@@ -230,7 +230,7 @@
     })();
 
     const SIZE_UPCHARGE={S:0,M:0,L:0,XL:0,"2XL":3,"3XL":3,"4XL":5,"5XL":5};
-    const HOODIE_SIZE_UPCHARGE={S:0,M:0,L:0,XL:0,"2XL":5,"3XL":10,"4XL":15,"5XL":20};
+    const HOODIE_SIZE_UPCHARGE={S:0,M:0,L:0,XL:0,"2XL":3,"3XL":3,"4XL":5,"5XL":5};
     function getStock(product,color,size){
       if(!product||!product.inventory||!product.inventory[color]||typeof product.inventory[color][size]!=="number")return Infinity;
       return product.inventory[color][size];
