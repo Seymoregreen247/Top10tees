@@ -1372,8 +1372,8 @@
         if(settings.garmentImages){PRODUCTS.forEach(p=>{if(settings.garmentImages[p.id])p.garmentImages=settings.garmentImages[p.id]})}
       }catch(e){console.error("Could not load settings from Google Sheets",e)}
     }
-    document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeOverlay(o.id)}));
-    document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>closeOverlay(o.id))});
+    document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o&&o.id!=="manage-overlay")closeOverlay(o.id)}));
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".overlay.open").forEach(o=>{if(o.id!=="manage-overlay")closeOverlay(o.id)})});
     document.addEventListener("contextmenu",e=>{if(e.target.closest(".art-wrap,.modal-art"))e.preventDefault()});
     const CACHE_KEY="t10t_store_v1";
     function writeCache(){
