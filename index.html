@@ -719,18 +719,69 @@
         pinInput.addEventListener("keydown",e=>{if(e.key==="Enter")checkPin()});
         return;
       }
-      const tabs=`<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
-        <button class="choice ${manageView==='designs'?'on':''}" onclick="switchManageView('designs')">TOP 10 DESIGNS</button>
-        <button class="choice ${manageView==='inventory'?'on':''}" onclick="switchManageView('inventory')">INVENTORY</button>
-        <button class="choice ${manageView==='gallery'?'on':''}" onclick="switchManageView('gallery')">PHOTO GALLERY</button>
-        <button class="choice ${manageView==='shipping'?'on':''}" onclick="switchManageView('shipping')">SHIPPING</button>
-        <button class="choice ${manageView==='wholesale'?'on':''}" onclick="switchManageView('wholesale')">WHOLESALE</button>
-        <button class="choice ${manageView==='hoodies'?'on':''}" onclick="switchManageView('hoodies')">HOODIES</button>
-        <button class="choice ${manageView==='discounts'?'on':''}" onclick="switchManageView('discounts')">DISCOUNT CODES</button>
+      const tabs=`<div style="margin-bottom:20px">
+        <div style="font:900 28px/1 Barlow Condensed,sans-serif;color:#111;margin-bottom:5px">TOP 10 CONTROL ROOM</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px">Quick changes first. Pick a city, pick a spot, update the tee, save it.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button class="choice ${manageView==='designs'?'on':''}" onclick="switchManageView('designs')" style="padding:13px 10px">👕 TEES</button>
+          <button class="choice ${manageView==='inventory'?'on':''}" onclick="switchManageView('inventory')" style="padding:13px 10px">📦 STOCK</button>
+        </div>
+        <details style="margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+          <summary style="cursor:pointer;font-size:11px;font-weight:900;letter-spacing:1px;color:var(--muted)">MORE TOOLS</summary>
+          <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">
+            <button class="choice ${manageView==='gallery'?'on':''}" onclick="switchManageView('gallery')">GALLERY</button>
+            <button class="choice ${manageView==='shipping'?'on':''}" onclick="switchManageView('shipping')">SHIPPING</button>
+            <button class="choice ${manageView==='wholesale'?'on':''}" onclick="switchManageView('wholesale')">WHOLESALE</button>
+            <button class="choice ${manageView==='hoodies'?'on':''}" onclick="switchManageView('hoodies')">HOODIES</button>
+            <button class="choice ${manageView==='discounts'?'on':''}" onclick="switchManageView('discounts')">DISCOUNTS</button>
+          </div>
+        </details>
       </div>`;
-      body.innerHTML=tabs+(manageView==="designs"?renderDesignsTab():manageView==="inventory"?renderInventoryTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():manageView==="wholesale"?renderWholesaleTab():manageView==="hoodies"?renderHoodiesTab():renderDiscountsTab());
+      body.innerHTML=tabs+(manageView==="designs"?renderQuickTeesTab():manageView==="inventory"?renderInventoryTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():manageView==="wholesale"?renderWholesaleTab():manageView==="hoodies"?renderHoodiesTab():renderDiscountsTab());
     }
     function switchManageView(view){manageView=view;renderManageBody()}
+    function renderQuickTeesTab(){
+      const city=currentCity&&CITY_META[currentCity]?currentCity:"boston";
+      const list=PRODUCTS.filter(p=>p.city===city);
+      return `<div style="display:flex;gap:8px;margin-bottom:16px">
+        ${Object.keys(CITY_META).map(c=>`<button class="choice ${city===c?'on':''}" onclick="currentCity='${c}';renderManageBody()" style="flex:1;padding:12px">${CITY_META[c].label.toUpperCase()}</button>`).join("")}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:18px">
+        ${list.map((p,i)=>`<button class="choice" onclick="openQuickTee('${p.id}')" style="padding:11px 4px">#${i+1}</button>`).join("")}
+      </div>
+      <div id="quick-tee-editor" style="border:1px solid var(--line);border-radius:14px;padding:14px;background:#fafafa">
+        <div style="text-align:center;color:var(--muted);padding:22px 8px"><b>Pick #1–10 above.</b><br><span style="font-size:12px">Then upload or replace that tee.</span></div>
+      </div>`;
+    }
+    function openQuickTee(id){
+      const p=PRODUCTS.find(x=>x.id===id);if(!p)return;
+      const list=PRODUCTS.filter(x=>x.city===p.city),pos=list.indexOf(p)+1;
+      const img=p.image||productArt(p,PRODUCTS.indexOf(p));
+      document.getElementById("quick-tee-editor").innerHTML=`
+        <div style="font:900 13px Inter,sans-serif;color:var(--muted);margin-bottom:10px">${CITY_META[p.city].label.toUpperCase()} • #${pos}</div>
+        <img src="${img}" alt="" style="width:100%;height:230px;object-fit:contain;background:#f1f1ee;border-radius:10px;margin-bottom:12px">
+        <label class="add-bag" style="display:block;text-align:center;cursor:pointer;margin:0 0 14px">UPLOAD / REPLACE TEE<input type="file" accept="image/*" style="display:none" onchange="quickUpload('${p.id}',this)"></label>
+        <div class="field"><label>TEE NAME</label><input id="name-input-${p.id}" value="${escapeXml(p.name)}"></div>
+        <div class="field"><label>PRICE</label><input id="price-input-${p.id}" type="number" min="0" step=".5" value="${p.price}"></div>
+        <div class="field"><label>SHORT DESCRIPTION (OPTIONAL)</label><input id="desc-input-${p.id}" value="${escapeXml(p.description||'')}"></div>
+        <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin:14px 0 8px">AVAILABLE COLORS</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">${COLORS.map(c=>`<label class="choice" style="display:flex;align-items:center;gap:5px"><input type="checkbox" ${(p.colors||COLORS).includes(c)?'checked':''} onchange="toggleProductColor('${p.id}','${c}')">${c}</label>`).join("")}</div>
+        <button class="add-bag" onclick="quickSaveTee('${p.id}')" style="margin-top:18px">SAVE TEE</button>
+        <div id="quick-save-msg" style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px"></div>`;
+    }
+    function quickUpload(id,input){
+      const p=PRODUCTS.find(x=>x.id===id);if(!p||!input.files||!input.files[0])return;
+      const reader=new FileReader();
+      reader.onload=e=>{p.image=e.target.result;p.images=p.images||{};p.images[(p.colors&&p.colors[0])||"Black"]=e.target.result;openQuickTee(id);};
+      reader.readAsDataURL(input.files[0]);
+    }
+    function quickSaveTee(id){
+      const p=PRODUCTS.find(x=>x.id===id);if(!p)return;
+      const n=document.getElementById("name-input-"+id),pr=document.getElementById("price-input-"+id),d=document.getElementById("desc-input-"+id);
+      if(n)p.name=n.value.trim()||p.name;if(pr)p.price=Math.max(0,parseFloat(pr.value)||0);if(d)p.description=d.value.trim();
+      saveAllDesigns();
+      const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Saving & publishing…";
+    }
     function renderDesignsTab(){
       return `<div class="section-note" style="margin-bottom:14px">Upload a photo, pick from your gallery, or use the arrows to rearrange order. Edit any name or price below, then hit <b>SAVE & GO LIVE</b> — that's the button that actually pushes everything to every visitor.</div>
       <div style="margin-bottom:18px"><button class="add-bag" onclick="saveAllDesigns()">SAVE &amp; GO LIVE</button><span id="designs-save-msg" style="font-size:12px;color:var(--muted);margin-left:12px"></span></div>`+Object.keys(CITY_META).map(city=>renderDesignsCitySection(city)).join("");
