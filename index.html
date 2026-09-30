@@ -740,11 +740,12 @@
       body.innerHTML=tabs+(manageView==="designs"?renderQuickTeesTab():manageView==="inventory"?renderInventoryTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():manageView==="wholesale"?renderWholesaleTab():manageView==="hoodies"?renderHoodiesTab():renderDiscountsTab());
     }
     function switchManageView(view){manageView=view;renderManageBody()}
+    let activeQuickTeeId=null;
     function renderQuickTeesTab(){
       const city=currentCity&&CITY_META[currentCity]?currentCity:"boston";
       const list=PRODUCTS.filter(p=>p.city===city);
       return `<div style="display:flex;gap:8px;margin-bottom:16px">
-        ${Object.keys(CITY_META).map(c=>`<button class="choice ${city===c?'on':''}" onclick="currentCity='${c}';renderManageBody()" style="flex:1;padding:12px">${CITY_META[c].label.toUpperCase()}</button>`).join("")}
+        ${Object.keys(CITY_META).map(c=>`<button class="choice ${city===c?'on':''}" onclick="activeQuickTeeId=null;currentCity='${c}';renderManageBody()" style="flex:1;padding:12px">${CITY_META[c].label.toUpperCase()}</button>`).join("")}
       </div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:18px">
         ${list.map((p,i)=>`<button class="choice" onclick="openQuickTee('${p.id}')" style="padding:11px 4px">#${i+1}</button>`).join("")}
@@ -754,12 +755,13 @@
       </div>`;
     }
     function openQuickTee(id){
+      activeQuickTeeId=id;
       const p=PRODUCTS.find(x=>x.id===id);if(!p)return;
       const list=PRODUCTS.filter(x=>x.city===p.city),pos=list.indexOf(p)+1;
       const img=p.image||productArt(p,PRODUCTS.indexOf(p));
       document.getElementById("quick-tee-editor").innerHTML=`
         <div style="font:900 13px Inter,sans-serif;color:var(--muted);margin-bottom:10px">${CITY_META[p.city].label.toUpperCase()} • #${pos}</div>
-        <img src="${img}" alt="" style="width:100%;height:230px;object-fit:contain;background:#f1f1ee;border-radius:10px;margin-bottom:12px">
+        <img id="quick-main-preview" src="${img}" alt="" style="width:100%;height:230px;object-fit:contain;background:#f1f1ee;border-radius:10px;margin-bottom:12px">
         <label class="add-bag" style="display:block;text-align:center;cursor:pointer;margin:0 0 14px">UPLOAD / REPLACE TEE<input type="file" accept="image/*" style="display:none" onchange="quickUpload('${p.id}',this)"></label>
         <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px">
           <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin-bottom:8px">OPTIONAL GARMENT PHOTOS</div>
@@ -773,14 +775,23 @@
         <div class="field"><label>PRICE</label><input id="price-input-${p.id}" type="number" min="0" step=".5" value="${p.price}"></div>
         <div class="field"><label>SHORT DESCRIPTION (OPTIONAL)</label><input id="desc-input-${p.id}" value="${escapeXml(p.description||'')}"></div>
         <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin:14px 0 8px">AVAILABLE COLORS</div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap">${COLORS.map(c=>`<label class="choice" style="display:flex;align-items:center;gap:5px"><input type="checkbox" ${(p.colors||COLORS).includes(c)?'checked':''} onchange="toggleProductColor('${p.id}','${c}')">${c}</label>`).join("")}</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">${COLORS.map(c=>`<label class="choice" style="display:flex;align-items:center;gap:5px"><input type="checkbox" ${(p.colors||COLORS).includes(c)?'checked':''} onchange="quickToggleColor('${p.id}','${c}',this)">${c}</label>`).join("")}</div>
         <button class="add-bag" onclick="quickSaveTee('${p.id}')" style="margin-top:18px">SAVE TEE</button>
         <div id="quick-save-msg" style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px"></div>`;
+    }
+    async function quickToggleColor(productId,color,checkbox){
+      const product=PRODUCTS.find(p=>p.id===productId);if(!product)return;
+      if(!Array.isArray(product.colors)||!product.colors.length)product.colors=[...COLORS];
+      const has=product.colors.includes(color);
+      if(!checkbox.checked&&has&&product.colors.length<=1){checkbox.checked=true;const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Keep at least one color selected.";return;}
+      if(checkbox.checked&&!has)product.colors.push(color);
+      if(!checkbox.checked&&has)product.colors=product.colors.filter(c=>c!==color);
+      const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Color updated — tap SAVE TEE.";
     }
     function quickUpload(id,input){
       const p=PRODUCTS.find(x=>x.id===id);if(!p||!input.files||!input.files[0])return;
       const reader=new FileReader();
-      reader.onload=e=>{p.image=e.target.result;p.images=p.images||{};p.images[(p.colors&&p.colors[0])||"Black"]=e.target.result;openQuickTee(id);};
+      reader.onload=e=>{p.image=e.target.result;p.images=p.images||{};p.images[(p.colors&&p.colors[0])||"Black"]=e.target.result;const preview=document.getElementById("quick-main-preview");if(preview)preview.src=e.target.result;const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Tee photo ready — tap SAVE TEE.";};
       reader.readAsDataURL(input.files[0]);
     }
     function quickGarmentUpload(id,garment,input){
@@ -795,8 +806,8 @@
       if(n)p.name=n.value.trim()||p.name;if(pr)p.price=Math.max(0,parseFloat(pr.value)||0);if(d)p.description=d.value.trim();
       p.stylePrices=p.stylePrices||{};
       ["Hoodie","Beanie","Long Sleeve"].forEach(g=>{const el=document.getElementById("style-price-"+p.id+"-"+g.replace(/ /g,"-"));if(el)p.stylePrices[g]=Math.max(0,parseFloat(el.value)||0);});
-      saveAllDesigns();
       const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Saving & publishing…";
+      saveSettings().then(ok=>{renderProducts();if(msg)msg.textContent=ok?"Saved & live.":"Saved here; sync could not be confirmed.";});
     }
     function renderDesignsTab(){
       return `<div class="section-note" style="margin-bottom:14px">Upload a photo, pick from your gallery, or use the arrows to rearrange order. Edit any name or price below, then hit <b>SAVE & GO LIVE</b> — that's the button that actually pushes everything to every visitor.</div>
@@ -1299,12 +1310,11 @@
       if(!Array.isArray(product.colors)||!product.colors.length)product.colors=[...COLORS];
       const idx=product.colors.indexOf(color);
       if(idx>-1){
-        if(product.colors.length<=1){renderManageBody();alert("At least one color needs to stay available for this shirt.");return}
+        if(product.colors.length<=1){alert("At least one color needs to stay available for this shirt.");return}
         product.colors.splice(idx,1);
       }else{
         product.colors.push(color);
       }
-      renderManageBody();
       await saveSettings();
     }
     /* ---- Settings persistence via the same Google Sheets Apps Script webhook ---- */
