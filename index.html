@@ -177,7 +177,7 @@
   <footer><div><div class="footer-brand">TOP 10 TEES</div><div class="footer-copy">© 2026 TOP 10 TEES, a Seymore Green project.<br>ALL RIGHTS RESERVED.</div><div class="footer-contact"><a href="tel:+18444739667">1-844-4-SEYMOR</a> · <a href="mailto:sales@seymoregreen.com">sales@seymoregreen.com</a><br>35 Poplar St, Roslindale, MA 02131<br><a href="policies.html">Privacy Policy</a> · <a href="policies.html#shipping">Shipping &amp; Returns</a> · <a href="policies.html#contact">Contact Us</a></div></div><div style="display:flex;align-items:center;gap:14px"><div class="stripes"><i></i><i></i><i></i></div><span id="secret-tap" onclick="secretTap()" aria-hidden="true">👟</span></div></footer>
 
   <div class="overlay" id="product-overlay" role="dialog" aria-modal="true">
-    <div class="modal"><div class="modal-head"><div class="modal-title">BUILD YOUR TEE</div><button class="close" onclick="closeOverlay('product-overlay')" aria-label="Close">×</button></div><div class="modal-body" id="product-modal-body"></div></div>
+    <div class="modal"><div class="modal-head"><div class="modal-title">CHOOSE YOUR STYLE</div><button class="close" onclick="closeOverlay('product-overlay')" aria-label="Close">×</button></div><div class="modal-body" id="product-modal-body"></div></div>
   </div>
 
   <div class="overlay" id="cart-overlay" role="dialog" aria-modal="true">
@@ -381,7 +381,7 @@
     }
     function money(n){return "$"+Number(n).toFixed(2)}
     function printsCost(){return selection.prints.reduce((n,p)=>n+(PRINTS[p]||0),0)}
-    function hoodieCost(){return selection.hoodie&&selection.hoodie.enabled?HOODIE_PRICE+(HOODIE_SIZE_UPCHARGE[selection.hoodie.size]||0):0}
+    function hoodieCost(){const hp=(current&&current.stylePrices&&current.stylePrices.Hoodie)||HOODIE_PRICE;return selection.hoodie&&selection.hoodie.enabled?hp+(HOODIE_SIZE_UPCHARGE[selection.hoodie.size]||0):0}
     function productTotal(){
       const tier=wholesaleTierFor(selection.qty);
       const base=tier?tier.price:current.price;
@@ -457,7 +457,7 @@
     function togglePrint(value){const i=selection.prints.indexOf(value);if(i>-1)selection.prints.splice(i,1);else selection.prints.push(value);renderProductModal()}
     function renderHoodieToggle(){
       const on=!!(selection.hoodie&&selection.hoodie.enabled);
-      return `<button class="choice ${on?'on':''}" onclick="toggleHoodie()">${on?'✓ ':''}MAKE IT A HOODIE — ${money(HOODIE_PRICE)}</button>`;
+      return `<button class="choice ${on?'on':''}" onclick="toggleHoodie()">${on?'✓ ':''}MAKE IT A HOODIE — ${money((current&&current.stylePrices&&current.stylePrices.Hoodie)||HOODIE_PRICE)}</button>`;
     }
     function renderHoodieColorChoices(){
       const list=HOODIE_COLORS.length?HOODIE_COLORS:ALL_HOODIE_COLORS;
@@ -519,7 +519,7 @@
       return `<div style="text-align:center;margin-top:12px;font-size:12px;color:var(--muted)">Need ${sorted[0].qty}+ of this design? <a href="#" onclick="event.preventDefault();closeOverlay('product-overlay');openWholesale(current&&current.id);" style="color:var(--red);font-weight:800">Check out Wholesale →</a></div>`;
     }
     function renderPurchaseAction(){
-      return `<div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button>${renderWholesaleTeaser()}`;
+      return `<div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button>`;
     }
     function addToBag(){
       const stock=getStock(current,selection.color,selection.size);
@@ -764,10 +764,10 @@
         <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px">
           <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin-bottom:8px">OPTIONAL GARMENT PHOTOS</div>
           <div style="font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:10px">The tee stays the main storefront image. Add these only when you have them.</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
-            ${["Hoodie","Beanie","Long Sleeve"].map(g=>`<label class="choice" style="text-align:center;padding:10px 4px;cursor:pointer">${g}<input type="file" accept="image/*" style="display:none" onchange="quickGarmentUpload('${p.id}','${g}',this)"></label>`).join("")}
+          <div style="display:grid;gap:8px">
+            ${["Hoodie","Beanie","Long Sleeve"].map(g=>`<div style="display:grid;grid-template-columns:1fr 90px;gap:7px;align-items:center"><label class="choice" style="text-align:center;padding:10px 4px;cursor:pointer">UPLOAD ${g.toUpperCase()}<input type="file" accept="image/*" style="display:none" onchange="quickGarmentUpload('${p.id}','${g}',this)"></label><label style="font-size:9px;font-weight:900;color:var(--muted)">PRICE $<input id="style-price-${p.id}-${g.replace(/ /g,'-')}" type="number" min="0" step=".5" value="${(p.stylePrices&&p.stylePrices[g])||(g==='Hoodie'?HOODIE_PRICE:g==='Beanie'?24.99:34.99)}" style="width:100%;padding:7px;border:1px solid var(--line);margin-top:3px"></label></div>`).join("")}
           </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:8px">Start with black. Add gray, red or blue later only when you actually offer them.</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:8px">One photo per style is enough to start — use your main black version. Add other colors later only when you actually offer them.</div>
         </div>
         <div class="field"><label>TEE NAME</label><input id="name-input-${p.id}" value="${escapeXml(p.name)}"></div>
         <div class="field"><label>PRICE</label><input id="price-input-${p.id}" type="number" min="0" step=".5" value="${p.price}"></div>
@@ -793,6 +793,8 @@
       const p=PRODUCTS.find(x=>x.id===id);if(!p)return;
       const n=document.getElementById("name-input-"+id),pr=document.getElementById("price-input-"+id),d=document.getElementById("desc-input-"+id);
       if(n)p.name=n.value.trim()||p.name;if(pr)p.price=Math.max(0,parseFloat(pr.value)||0);if(d)p.description=d.value.trim();
+      p.stylePrices=p.stylePrices||{};
+      ["Hoodie","Beanie","Long Sleeve"].forEach(g=>{const el=document.getElementById("style-price-"+p.id+"-"+g.replace(/ /g,"-"));if(el)p.stylePrices[g]=Math.max(0,parseFloat(el.value)||0);});
       saveAllDesigns();
       const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Saving & publishing…";
     }
