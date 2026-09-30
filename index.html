@@ -315,7 +315,7 @@
     let cart=[];
     let deliveryMethod="shipping";
     let current=null;
-    let selection={garment:"Tee",color:"Black",size:"L",qty:1,prints:[],hoodie:{enabled:false,color:HOODIE_COLORS[0]||"",size:"L"}};
+    let selection={garment:"Tee",color:"Black",size:"L",qty:1,prints:[]};
 
     function escapeXml(v){return String(v).replace(/[<>&'\"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'\"':"&quot;"}[c]));}
     function productArt(product,index){
@@ -381,11 +381,11 @@
     }
     function money(n){return "$"+Number(n).toFixed(2)}
     function printsCost(){return selection.prints.reduce((n,p)=>n+(PRINTS[p]||0),0)}
-    function hoodieCost(){const hp=(current&&current.stylePrices&&current.stylePrices.Hoodie)||HOODIE_PRICE;return selection.hoodie&&selection.hoodie.enabled?hp+(HOODIE_SIZE_UPCHARGE[selection.hoodie.size]||0):0}
     function productTotal(){
-      const tier=wholesaleTierFor(selection.qty);
-      const base=tier?tier.price:current.price;
-      return (base+GARMENTS[selection.garment]+SIZE_UPCHARGE[selection.size]+printsCost()+hoodieCost())*selection.qty;
+      const base=stylePrice(current,selection.garment||"Tee");
+      const sizeUp=(selection.garment==="Beanie")?0:(SIZE_UPCHARGE[selection.size]||0);
+      const printUp=(selection.garment==="Beanie"||selection.garment==="Hoodie")?0:printsCost();
+      return (base+sizeUp+printUp)*selection.qty;
     }
 
     function renderProducts(){
@@ -434,7 +434,7 @@
         const avail=Object.keys(SIZE_UPCHARGE).find(sz=>getStock(current,firstColor,sz)>0);
         if(avail)size=avail;
       }
-      selection={garment:"Tee",color:firstColor,size,qty:1,prints:[],hoodie:{enabled:false,color:HOODIE_COLORS[0]||"",size:"L"}};renderProductModal();openOverlay("product-overlay");
+      selection={garment:"Tee",color:firstColor,size,qty:1,prints:[]};renderProductModal();openOverlay("product-overlay");
       try{const url=new URL(window.location.href);url.searchParams.set("product",current.id);url.searchParams.set("city",current.city||currentCity);history.replaceState(null,"",url);}catch(e){}
     }
     function renderChoices(values,key){return values.map(v=>`<button class="choice ${selection[key]===v?'on':''}" onclick="setChoice('${key}','${v}')">${v}${key==='garment'&&GARMENTS[v]?` +${money(GARMENTS[v])}`:''}</button>`).join("")}
@@ -455,36 +455,36 @@
     }
     function renderPrintChoices(){return Object.keys(PRINTS).map(v=>`<button class="choice ${selection.prints.includes(v)?'on':''}" onclick="togglePrint('${v}')">${v} +${money(PRINTS[v])}</button>`).join("")}
     function togglePrint(value){const i=selection.prints.indexOf(value);if(i>-1)selection.prints.splice(i,1);else selection.prints.push(value);renderProductModal()}
-    function renderHoodieToggle(){
-      const on=!!(selection.hoodie&&selection.hoodie.enabled);
-      return `<button class="choice ${on?'on':''}" onclick="toggleHoodie()">${on?'✓ ':''}MAKE IT A HOODIE — ${money((current&&current.stylePrices&&current.stylePrices.Hoodie)||HOODIE_PRICE)}</button>`;
+    function availableStyles(product){
+      const out=["Tee"];
+      ["Hoodie","Beanie","Long Sleeve"].forEach(g=>{if(product.garmentImages&&product.garmentImages[g])out.push(g)});
+      return out;
     }
-    function renderHoodieColorChoices(){
-      const list=HOODIE_COLORS.length?HOODIE_COLORS:ALL_HOODIE_COLORS;
-      return list.map(c=>{
-        const hex=HOODIE_COLOR_HEX[c]||"#ccc";
-        const light=c==="White";
-        return `<button class="choice color-choice ${selection.hoodie.color===c?'on':''}" onclick="setHoodieChoice('color','${c}')" title="${c}"><span class="swatch-dot" style="background:${hex};${light?'box-shadow:inset 0 0 0 1px #c8ccd4':''}"></span>${c}</button>`;
+    function stylePrice(product,style){
+      if(style==="Tee")return product.price;
+      const defaults={Hoodie:49.99,Beanie:24.99,"Long Sleeve":34.99};
+      return (product.stylePrices&&typeof product.stylePrices[style]==="number")?product.stylePrices[style]:defaults[style];
+    }
+    function renderStyleChoices(){
+      return availableStyles(current).map(g=>{
+        const img=g==="Tee"?(current.image||productArt(current,PRODUCTS.indexOf(current))):current.garmentImages[g];
+        return `<button class="choice ${selection.garment===g?'on':''}" onclick="setStyle('${g}')" style="width:92px;padding:7px"><img src="${img}" alt="" style="width:76px;height:70px;object-fit:contain;display:block;background:#f2f2ef;margin:0 auto 6px"><span style="display:block;font-size:10px;font-weight:900">${g.toUpperCase()}</span><span style="display:block;font-size:10px;margin-top:3px">${money(stylePrice(current,g))}</span></button>`;
       }).join("");
     }
-    function renderHoodieSizeChoices(){
-      return Object.keys(HOODIE_SIZE_UPCHARGE).map(v=>`<button class="choice ${selection.hoodie.size===v?'on':''}" onclick="setHoodieChoice('size','${v}')">${v}${HOODIE_SIZE_UPCHARGE[v]?` +${money(HOODIE_SIZE_UPCHARGE[v])}`:''}</button>`).join("");
-    }
-    function toggleHoodie(){
-      if(!selection.hoodie)selection.hoodie={enabled:false,color:HOODIE_COLORS[0]||"",size:"L"};
-      selection.hoodie.enabled=!selection.hoodie.enabled;
-      if(selection.hoodie.enabled&&!selection.hoodie.color)selection.hoodie.color=HOODIE_COLORS[0]||"";
+    function setStyle(style){
+      selection.garment=style;
+      if(style!=="Tee"&&selection.color==="White")selection.color="Black";
       renderProductModal();
     }
-    function setHoodieChoice(key,value){selection.hoodie[key]=value;renderProductModal();}
     function currentDisplayImage(product,i){
-      if(selection.hoodie&&selection.hoodie.enabled&&product.garmentImages&&product.garmentImages["Hoodie"])return product.garmentImages["Hoodie"];
+      if(selection.garment!=="Tee"&&product.garmentImages&&product.garmentImages[selection.garment])return product.garmentImages[selection.garment];
       if(product.images&&product.images[selection.color])return product.images[selection.color];
       return product.image||productArt(product,i);
     }
     function renderProductModal(){
       const i=PRODUCTS.indexOf(current);
-      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art" onclick="openImageZoom('${currentDisplayImage(current,i)}','${escapeXml(current.name)} — ${selection.color}')"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${selection.color}">${watermark()}<div class="zoom-hint">🔍 TAP TO ZOOM</div></div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this tee</button>${current.description?`<p style="font:600 14px/1.5 Inter,sans-serif;color:var(--muted);margin:10px 0 4px">${escapeXml(current.description)}</p>`:""}<div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderSizeChoices()}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">WANT THIS DESIGN ON A HOODIE?</div><div class="choices">${renderHoodieToggle()}</div>${selection.hoodie&&selection.hoodie.enabled?`<div class="choice-title">HOODIE COLOR</div><div class="choices">${renderHoodieColorChoices()}</div><div class="choice-title">HOODIE SIZE</div><div class="choices">${renderHoodieSizeChoices()}</div>`:""}<div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><input type="number" min="1" max="${retailQtyCap()}" value="${selection.qty}" onchange="setQty(this.value)" style="width:56px;height:38px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:0;border-right:0;font-weight:900;font-size:15px"><button onclick="changeQty(1)">+</button></div>${renderPurchaseAction()}</div></div>`;
+      const style=selection.garment||"Tee";
+      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art" onclick="openImageZoom('${currentDisplayImage(current,i)}','${escapeXml(current.name)} — ${style}')"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${style}"><div class="zoom-hint">🔍 TAP TO ZOOM</div></div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this design</button>${current.description?`<p style="font:600 14px/1.5 Inter,sans-serif;color:var(--muted);margin:10px 0 4px">${escapeXml(current.description)}</p>`:""}<div class="choice-title">CHOOSE YOUR STYLE</div><div class="choices" style="align-items:stretch">${renderStyleChoices()}</div><div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderSizeChoices()}</div>${style==="Tee"||style==="Long Sleeve"?`<div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div>`:""}<div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><input type="number" min="1" max="${retailQtyCap()}" value="${selection.qty}" onchange="setQty(this.value)" style="width:56px;height:38px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:0;border-right:0;font-weight:900;font-size:15px"><button onclick="changeQty(1)">+</button></div>${renderPurchaseAction()}</div></div>`;
     }
     function setChoice(key,value){
       selection[key]=value;
@@ -534,7 +534,7 @@
     function renderCart(){
       const lines=document.getElementById("cart-lines"),footer=document.getElementById("cart-footer");
       if(!cart.length){lines.innerHTML='<div class="cart-empty">Your bag is empty.<br>Choose one of the Top 10.</div>';footer.innerHTML="";return}
-      lines.innerHTML=cart.map((i,n)=>`<div class="cart-line"><img src="${i.image}" alt=""><div><div class="cart-line-name">${escapeXml(i.name)}</div><div class="cart-line-detail">${i.color} • Size ${i.size} • Qty ${i.qty}${i.prints&&i.prints.length?` • ${i.prints.join(", ")}`:""}${i.hoodie&&i.hoodie.enabled?` • +Hoodie: ${i.hoodie.color} (${i.hoodie.size})`:""}</div><button class="remove" onclick="removeItem(${n})">REMOVE</button></div><strong>${money(i.total)}</strong></div>`).join("");
+      lines.innerHTML=cart.map((i,n)=>`<div class="cart-line"><img src="${i.image}" alt=""><div><div class="cart-line-name">${escapeXml(i.name)}</div><div class="cart-line-detail">${i.garment} • ${i.color}${i.garment==="Beanie"?"":` • Size ${i.size}`} • Qty ${i.qty}${i.prints&&i.prints.length?` • ${i.prints.join(", ")}`:""}</div><button class="remove" onclick="removeItem(${n})">REMOVE</button></div><strong>${money(i.total)}</strong></div>`).join("");
       footer.innerHTML=`<div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div>${appliedDiscount?`<div class="summary-row"><span>Discount (${escapeXml(appliedDiscount.code)})</span><b style="color:var(--red)">-${money(discountAmount())}</b></div>`:""}<div class="summary-row"><span>Shipping</span><span>${subtotal()>=FREE_SHIPPING_THRESHOLD?"FREE":"Calculated next"}</span></div><div class="summary-row total"><span>SUBTOTAL</span><span>${money(subtotal()-discountAmount())}</span></div></div>${subtotal()<FREE_SHIPPING_THRESHOLD?`<div class="section-note" style="margin:8px 0;color:var(--navy);font-weight:700">Add ${money(FREE_SHIPPING_THRESHOLD-subtotal())} more for FREE shipping!</div>`:`<div class="section-note" style="margin:8px 0;color:var(--navy);font-weight:700">You've unlocked FREE shipping 🎉</div>`}<div style="display:flex;gap:8px;margin:12px 0 4px"><input id="cart-discount-input" placeholder="DISCOUNT CODE" style="flex:1;border:1px solid var(--line);padding:8px;text-transform:uppercase" value="${appliedDiscount?appliedDiscount.code:''}"><button class="choice" onclick="applyDiscountCode('cart-discount-input','cart-discount-msg')">${appliedDiscount?"REMOVE":"APPLY"}</button></div><div id="cart-discount-msg" style="font-size:11px;color:var(--muted);margin-bottom:10px"></div><button class="checkout" onclick="startCheckout()">CONTINUE TO PAYPAL</button>`;
     }
     function shippingFee(){if(deliveryMethod!=="shipping")return 0;return subtotal()>=FREE_SHIPPING_THRESHOLD?0:SHIPPING_PRICE}
@@ -1324,7 +1324,9 @@
         freeShippingThreshold:FREE_SHIPPING_THRESHOLD,
         wholesaleTiers:WHOLESALE_TIERS,
         discountCodes,
-        hoodieColors:HOODIE_COLORS
+        hoodieColors:HOODIE_COLORS,
+        stylePrices:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.stylePrices||{}])),
+        garmentImages:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.garmentImages||{}]))
       };
       try{
         await fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"settings",settings})});
@@ -1356,6 +1358,8 @@
         if(Array.isArray(settings.wholesaleTiers)&&settings.wholesaleTiers.length)WHOLESALE_TIERS=settings.wholesaleTiers;
         if(Array.isArray(settings.discountCodes))discountCodes=settings.discountCodes;
         if(Array.isArray(settings.hoodieColors)&&settings.hoodieColors.length)HOODIE_COLORS=settings.hoodieColors;
+        if(settings.stylePrices){PRODUCTS.forEach(p=>{if(settings.stylePrices[p.id])p.stylePrices=settings.stylePrices[p.id]})}
+        if(settings.garmentImages){PRODUCTS.forEach(p=>{if(settings.garmentImages[p.id])p.garmentImages=settings.garmentImages[p.id]})}
       }catch(e){console.error("Could not load settings from Google Sheets",e)}
     }
     document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeOverlay(o.id)}));
@@ -1366,7 +1370,7 @@
       try{
         localStorage.setItem(CACHE_KEY,JSON.stringify({
           t:Date.now(),
-          products:PRODUCTS.map(p=>({id:p.id,name:p.name,price:p.price,image:p.image,images:p.images,colors:p.colors})),
+          products:PRODUCTS.map(p=>({id:p.id,name:p.name,price:p.price,image:p.image,images:p.images,colors:p.colors,stylePrices:p.stylePrices,garmentImages:p.garmentImages})),
           shippingPrice:SHIPPING_PRICE,
           freeShippingThreshold:FREE_SHIPPING_THRESHOLD,
           discountCodes:discountCodes,
@@ -1388,6 +1392,8 @@
           if(cp.image)p.image=cp.image;
           if(cp.images&&typeof cp.images==="object")p.images=cp.images;
           if(Array.isArray(cp.colors)&&cp.colors.length)p.colors=cp.colors;
+          if(cp.stylePrices)p.stylePrices=cp.stylePrices;
+          if(cp.garmentImages)p.garmentImages=cp.garmentImages;
           ordered.push(p);
         });
         PRODUCTS.forEach(p=>{if(ordered.indexOf(p)===-1)ordered.push(p)});
