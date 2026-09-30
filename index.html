@@ -145,7 +145,6 @@
   <header class="site-header">
     <div class="brand"><div class="brand-mark">10</div><div><div class="brand-name">TOP 10 TEES</div></div></div>
     <div style="display:flex;gap:10px;align-items:center">
-    <button class="secondary" type="button" onclick="openWholesale()" style="padding:9px 16px;font-size:12px">WHOLESALE</button>
     <button class="cart-button" type="button" onclick="openCart()">BAG <span class="cart-count" id="cart-count">0</span></button>
     </div>
   </header>
@@ -458,7 +457,7 @@
     function togglePrint(value){const i=selection.prints.indexOf(value);if(i>-1)selection.prints.splice(i,1);else selection.prints.push(value);renderProductModal()}
     function renderHoodieToggle(){
       const on=!!(selection.hoodie&&selection.hoodie.enabled);
-      return `<button class="choice ${on?'on':''}" onclick="toggleHoodie()">${on?'✓ ':''}ADD HOODIE +${money(HOODIE_PRICE)}</button>`;
+      return `<button class="choice ${on?'on':''}" onclick="toggleHoodie()">${on?'✓ ':''}MAKE IT A HOODIE — ${money(HOODIE_PRICE)}</button>`;
     }
     function renderHoodieColorChoices(){
       const list=HOODIE_COLORS.length?HOODIE_COLORS:ALL_HOODIE_COLORS;
@@ -479,12 +478,13 @@
     }
     function setHoodieChoice(key,value){selection.hoodie[key]=value;renderProductModal();}
     function currentDisplayImage(product,i){
+      if(selection.hoodie&&selection.hoodie.enabled&&product.garmentImages&&product.garmentImages["Hoodie"])return product.garmentImages["Hoodie"];
       if(product.images&&product.images[selection.color])return product.images[selection.color];
       return product.image||productArt(product,i);
     }
     function renderProductModal(){
       const i=PRODUCTS.indexOf(current);
-      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art" onclick="openImageZoom('${currentDisplayImage(current,i)}','${escapeXml(current.name)} — ${selection.color}')"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${selection.color}">${watermark()}<div class="zoom-hint">🔍 TAP TO ZOOM</div></div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this tee</button>${current.description?`<p style="font:600 14px/1.5 Inter,sans-serif;color:var(--muted);margin:10px 0 4px">${escapeXml(current.description)}</p>`:""}<div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderSizeChoices()}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">HOODIE UPGRADE</div><div class="choices">${renderHoodieToggle()}</div>${selection.hoodie&&selection.hoodie.enabled?`<div class="choice-title">HOODIE COLOR</div><div class="choices">${renderHoodieColorChoices()}</div><div class="choice-title">HOODIE SIZE</div><div class="choices">${renderHoodieSizeChoices()}</div>`:""}<div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><input type="number" min="1" max="${retailQtyCap()}" value="${selection.qty}" onchange="setQty(this.value)" style="width:56px;height:38px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:0;border-right:0;font-weight:900;font-size:15px"><button onclick="changeQty(1)">+</button></div>${renderPurchaseAction()}</div></div>`;
+      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art" onclick="openImageZoom('${currentDisplayImage(current,i)}','${escapeXml(current.name)} — ${selection.color}')"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${selection.color}">${watermark()}<div class="zoom-hint">🔍 TAP TO ZOOM</div></div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this tee</button>${current.description?`<p style="font:600 14px/1.5 Inter,sans-serif;color:var(--muted);margin:10px 0 4px">${escapeXml(current.description)}</p>`:""}<div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderSizeChoices()}</div><div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div><div class="choice-title">WANT THIS DESIGN ON A HOODIE?</div><div class="choices">${renderHoodieToggle()}</div>${selection.hoodie&&selection.hoodie.enabled?`<div class="choice-title">HOODIE COLOR</div><div class="choices">${renderHoodieColorChoices()}</div><div class="choice-title">HOODIE SIZE</div><div class="choices">${renderHoodieSizeChoices()}</div>`:""}<div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><input type="number" min="1" max="${retailQtyCap()}" value="${selection.qty}" onchange="setQty(this.value)" style="width:56px;height:38px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:0;border-right:0;font-weight:900;font-size:15px"><button onclick="changeQty(1)">+</button></div>${renderPurchaseAction()}</div></div>`;
     }
     function setChoice(key,value){
       selection[key]=value;
@@ -761,6 +761,14 @@
         <div style="font:900 13px Inter,sans-serif;color:var(--muted);margin-bottom:10px">${CITY_META[p.city].label.toUpperCase()} • #${pos}</div>
         <img src="${img}" alt="" style="width:100%;height:230px;object-fit:contain;background:#f1f1ee;border-radius:10px;margin-bottom:12px">
         <label class="add-bag" style="display:block;text-align:center;cursor:pointer;margin:0 0 14px">UPLOAD / REPLACE TEE<input type="file" accept="image/*" style="display:none" onchange="quickUpload('${p.id}',this)"></label>
+        <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px">
+          <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin-bottom:8px">OPTIONAL GARMENT PHOTOS</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:10px">The tee stays the main storefront image. Add these only when you have them.</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+            ${["Hoodie","Beanie","Long Sleeve"].map(g=>`<label class="choice" style="text-align:center;padding:10px 4px;cursor:pointer">${g}<input type="file" accept="image/*" style="display:none" onchange="quickGarmentUpload('${p.id}','${g}',this)"></label>`).join("")}
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:8px">Start with black. Add gray, red or blue later only when you actually offer them.</div>
+        </div>
         <div class="field"><label>TEE NAME</label><input id="name-input-${p.id}" value="${escapeXml(p.name)}"></div>
         <div class="field"><label>PRICE</label><input id="price-input-${p.id}" type="number" min="0" step=".5" value="${p.price}"></div>
         <div class="field"><label>SHORT DESCRIPTION (OPTIONAL)</label><input id="desc-input-${p.id}" value="${escapeXml(p.description||'')}"></div>
@@ -773,6 +781,12 @@
       const p=PRODUCTS.find(x=>x.id===id);if(!p||!input.files||!input.files[0])return;
       const reader=new FileReader();
       reader.onload=e=>{p.image=e.target.result;p.images=p.images||{};p.images[(p.colors&&p.colors[0])||"Black"]=e.target.result;openQuickTee(id);};
+      reader.readAsDataURL(input.files[0]);
+    }
+    function quickGarmentUpload(id,garment,input){
+      const p=PRODUCTS.find(x=>x.id===id);if(!p||!input.files||!input.files[0])return;
+      const reader=new FileReader();
+      reader.onload=e=>{p.garmentImages=p.garmentImages||{};p.garmentImages[garment]=e.target.result;const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent=garment+" photo ready — tap SAVE TEE.";};
       reader.readAsDataURL(input.files[0]);
     }
     function quickSaveTee(id){
