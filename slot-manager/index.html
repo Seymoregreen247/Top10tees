@@ -288,6 +288,13 @@ function compressImage(file,opts){
   });
 }
 
+async function verifySlotSave(type,expected){
+  for(let attempt=0;attempt<3;attempt++){
+    try{const r=await fetch(`${WEBHOOK_URL}?type=${type}&_=${Date.now()}`,{cache:"no-store"});if(r.ok&&expected(await r.json()))return true;}catch(e){}
+    if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000));
+  }
+  return false;
+}
 async function saveSlot(){
   if(!editingId)return;
   const nameVal=document.getElementById("f-name").value.trim();
@@ -297,6 +304,7 @@ async function saveSlot(){
     setStatus("Pick which color this photo is for before saving.","err");
     return;
   }
+  if(priceVal!==""&&(!Number.isFinite(Number(priceVal))||Number(priceVal)<0)){setStatus("Enter a valid price of zero or more.","err");return;}
   const btn=document.getElementById("save-btn");
   btn.disabled=true;btn.textContent="Saving…";
   setStatus("Reading current live data so nothing else gets overwritten…","");
@@ -331,6 +339,7 @@ async function saveSlot(){
     setStatus("Name/price sent. Uploading photo…","");
     try{
       await fetch(WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"photo",key:`${editingId}::${pendingColor}`,dataUrl:pendingPhotoDataUrl})});
+      if(!await verifySlotSave("photos",photos=>photos[`${editingId}::${pendingColor}`]===pendingPhotoDataUrl))throw new Error("Photo not verified");
       photoMap[`${editingId}::${pendingColor}`]=pendingPhotoDataUrl;
     }catch(e){
       setStatus("Name/price saved, but the photo failed to send. Try the photo again.","err");
@@ -339,11 +348,13 @@ async function saveSlot(){
     }
   }
 
-  // Update local view optimistically. Because these POSTs use no-cors, the browser can't
+  const verified=await verifySlotSave("settings",saved=>saved.names?.[editingId]===fresh.names[editingId]&&saved.prices?.[editingId]===fresh.prices[editingId]&&saved.descriptions?.[editingId]===fresh.descriptions[editingId]);
+  if(!verified){setStatus("Changes could not be verified online. Keep this page open and try Save & Go Live again.","err");btn.disabled=false;btn.textContent="Save & Go Live";return;}
+  // Update local view after verification. Because these POSTs use no-cors, the browser can't
   // read a real success/failure response — this reflects what we SENT, not a confirmed receipt.
   liveSettings=fresh;
   renderGrid();
-  setStatus("Sent — check the live site link below in a few seconds to confirm it shows up.","ok");
+  setStatus("Saved & verified online — your changes are live.","ok");
   btn.disabled=false;btn.textContent="Save & Go Live";
 }
 

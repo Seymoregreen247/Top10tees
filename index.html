@@ -301,7 +301,8 @@
     function colorStock(product,color){
       if(!product||!product.inventory||!product.inventory[color])return Infinity;
       const sizes=product.inventory[color];
-      return Object.values(sizes).reduce((sum,v)=>sum+(typeof v==="number"?v:0),0);
+      const values=Object.keys(SIZE_UPCHARGE).map(size=>getStock(product,color,size));
+      return values.includes(Infinity)?Infinity:values.reduce((sum,v)=>sum+v,0);
     }
     const GARMENTS={Tee:0};
     const COLORS=["Black","White","Red","Gray","Blue"];
@@ -428,7 +429,8 @@
     function chooseProduct(index){
       const target=PRODUCTS[index];
       if(target&&isProductLocked(target)){focusUnlockInput();return;}
-      current=PRODUCTS[index];const firstColor=(current.colors&&current.colors.length?current.colors:COLORS)[0];
+      if(!target)return;
+      current=target;const firstColor=(current.colors&&current.colors.length?current.colors:COLORS)[0];
       let size="L";
       if(getStock(current,firstColor,size)<=0){
         const avail=Object.keys(SIZE_UPCHARGE).find(sz=>getStock(current,firstColor,sz)>0);
@@ -484,7 +486,7 @@
     function renderProductModal(){
       const i=PRODUCTS.indexOf(current);
       const style=selection.garment||"Tee";
-      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art" onclick="openImageZoom('${currentDisplayImage(current,i)}','${escapeXml(current.name)} — ${style}')"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${style}"><div class="zoom-hint">🔍 TAP TO ZOOM</div></div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this design</button>${current.description?`<p style="font:600 14px/1.5 Inter,sans-serif;color:var(--muted);margin:10px 0 4px">${escapeXml(current.description)}</p>`:""}<div class="choice-title">CHOOSE YOUR STYLE</div><div class="choices" style="align-items:stretch">${renderStyleChoices()}</div><div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderSizeChoices()}</div>${style==="Tee"||style==="Long Sleeve"?`<div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div>`:""}<div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><input type="number" min="1" max="${retailQtyCap()}" value="${selection.qty}" onchange="setQty(this.value)" style="width:56px;height:38px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:0;border-right:0;font-weight:900;font-size:15px"><button onclick="changeQty(1)">+</button></div>${renderPurchaseAction()}</div></div>`;
+      document.getElementById("product-modal-body").innerHTML=`<div class="product-modal-grid"><div class="modal-art" onclick="zoomCurrentProduct()"><img src="${currentDisplayImage(current,i)}" alt="${escapeXml(current.name)} — ${style}"><div class="zoom-hint">🔍 TAP TO ZOOM</div></div><div><div class="section-kicker">${current.id}</div><h3 style="font:900 38px/.95 Barlow Condensed,sans-serif;color:var(--navy);margin:8px 0">${escapeXml(current.name)}</h3><button class="modal-share-btn" onclick="shareProduct(${i},event)">${shareIcon()} Share this design</button>${current.description?`<p style="font:600 14px/1.5 Inter,sans-serif;color:var(--muted);margin:10px 0 4px">${escapeXml(current.description)}</p>`:""}<div class="choice-title">CHOOSE YOUR STYLE</div><div class="choices" style="align-items:stretch">${renderStyleChoices()}</div><div class="choice-title">COLOR</div><div class="choices">${renderColorChoices(current.colors&&current.colors.length?current.colors:COLORS)}</div><div class="choice-title" style="display:flex;justify-content:space-between;align-items:center">SIZE <a href="policies.html#sizing" target="_blank" rel="noopener" style="color:var(--red);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px">Size chart →</a></div><div class="choices">${renderSizeChoices()}</div>${style==="Tee"||style==="Long Sleeve"?`<div class="choice-title">PRINT ADD-ONS</div><div class="choices">${renderPrintChoices()}</div>`:""}<div class="choice-title">QUANTITY</div><div class="qty"><button onclick="changeQty(-1)">−</button><input type="number" min="1" max="${retailQtyCap()}" value="${selection.qty}" onchange="setQty(this.value)" style="width:56px;height:38px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-left:0;border-right:0;font-weight:900;font-size:15px"><button onclick="changeQty(1)">+</button></div>${renderPurchaseAction()}</div></div>`;
     }
     function setChoice(key,value){
       selection[key]=value;
@@ -496,7 +498,7 @@
     }
     function retailQtyCap(){
       const sorted=WHOLESALE_TIERS.slice().sort((a,b)=>a.qty-b.qty);
-      return sorted.length?sorted[0].qty-1:200;
+      return sorted.length?Math.max(1,sorted[0].qty-1):200;
     }
     function changeQty(delta){
       const stock=getStock(current,selection.color,selection.size);
@@ -519,22 +521,46 @@
       return `<div style="text-align:center;margin-top:12px;font-size:12px;color:var(--muted)">Need ${sorted[0].qty}+ of this design? <a href="#" onclick="event.preventDefault();closeOverlay('product-overlay');openWholesale(current&&current.id);" style="color:var(--red);font-weight:800">Check out Wholesale →</a></div>`;
     }
     function renderPurchaseAction(){
-      return `<div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()">ADD TO BAG</button>`;
+      const soldOut=getStock(current,selection.color,selection.size)<=0;
+      return `<div class="selection-total">TOTAL ${money(productTotal())}</div><button class="add-bag" onclick="addToBag()" ${soldOut?'disabled':''}>${soldOut?'SOLD OUT':'ADD TO BAG'}</button>${renderWholesaleTeaser()}`;
     }
     function addToBag(){
-      const stock=getStock(current,selection.color,selection.size);
+      if(!current||isProductLocked(current))return;
+      const inBag=cart.filter(i=>i.productId===current.id&&i.color===selection.color&&i.size===selection.size).reduce((n,i)=>n+i.qty,0);
+      const stock=getStock(current,selection.color,selection.size)-inBag;
       if(stock<=0){alert(`${selection.color} — Size ${selection.size} is sold out.`);return}
       if(selection.qty>stock){alert(`Only ${stock} left in ${selection.color} / Size ${selection.size}. Lowering quantity to match.`);selection.qty=stock;renderProductModal();return}
-      cart.push({productId:current.id,name:current.name,image:currentDisplayImage(current,PRODUCTS.indexOf(current)),...selection,total:productTotal()});updateCartCount();closeOverlay("product-overlay");openCart()
+      cart.push({productId:current.id,name:current.name,image:currentDisplayImage(current,PRODUCTS.indexOf(current)),...selection,prints:[...selection.prints],total:productTotal()});updateCartCount();closeOverlay("product-overlay");openCart()
     }
-    function updateCartCount(){document.getElementById("cart-count").textContent=cart.reduce((n,i)=>n+i.qty,0)}
+    const BAG_KEY="t10t_saved_bag_v1";
+    function saveBag(){try{localStorage.setItem(BAG_KEY,JSON.stringify(cart.map(i=>({productId:i.productId,garment:i.garment,color:i.color,size:i.size,qty:i.qty,prints:i.prints}))));}catch(e){}}
+    function restoreBag(){
+      try{
+        const saved=JSON.parse(localStorage.getItem(BAG_KEY)||"[]");if(!Array.isArray(saved))return;
+        const restored=[];
+        saved.forEach(item=>{
+          const p=PRODUCTS.find(x=>x.id===item.productId);if(!p||isProductLocked(p)||!availableStyles(p).includes(item.garment))return;
+          if(!(p.colors||COLORS).includes(item.color)||!Object.hasOwn(SIZE_UPCHARGE,item.size))return;
+          const already=restored.filter(i=>i.productId===p.id&&i.color===item.color&&i.size===item.size).reduce((n,i)=>n+i.qty,0);
+          const qty=Math.min(retailQtyCap(),Math.floor(Number(item.qty)),getStock(p,item.color,item.size)-already);if(!Number.isFinite(qty)||qty<1)return;
+          const prints=Array.isArray(item.prints)&&["Tee","Long Sleeve"].includes(item.garment)?[...new Set(item.prints.filter(x=>Object.hasOwn(PRINTS,x)))]:[];
+          const sizeUp=item.garment==="Beanie"?0:SIZE_UPCHARGE[item.size];
+          const total=(stylePrice(p,item.garment)+sizeUp+prints.reduce((n,x)=>n+PRINTS[x],0))*qty;
+          const image=item.garment==="Tee"?((p.images&&p.images[item.color])||p.image||productArt(p,PRODUCTS.indexOf(p))):p.garmentImages[item.garment];
+          restored.push({...item,qty,prints,name:p.name,image,total});
+        });
+        cart=restored;
+      }catch(e){cart=[];}
+    }
+    function updateCartCount(){document.getElementById("cart-count").textContent=cart.reduce((n,i)=>n+i.qty,0);saveBag()}
+
     function subtotal(){return cart.reduce((n,i)=>n+i.total,0)}
     function removeItem(index){cart.splice(index,1);updateCartCount();renderCart()}
     function openCart(){renderCart();openOverlay("cart-overlay")}
     function renderCart(){
       const lines=document.getElementById("cart-lines"),footer=document.getElementById("cart-footer");
       if(!cart.length){lines.innerHTML='<div class="cart-empty">Your bag is empty.<br>Choose one of the Top 10.</div>';footer.innerHTML="";return}
-      lines.innerHTML=cart.map((i,n)=>`<div class="cart-line"><img src="${i.image}" alt=""><div><div class="cart-line-name">${escapeXml(i.name)}</div><div class="cart-line-detail">${i.garment} • ${i.color}${i.garment==="Beanie"?"":` • Size ${i.size}`} • Qty ${i.qty}${i.prints&&i.prints.length?` • ${i.prints.join(", ")}`:""}</div><button class="remove" onclick="removeItem(${n})">REMOVE</button></div><strong>${money(i.total)}</strong></div>`).join("");
+      lines.innerHTML='<div class="section-note" style="margin-bottom:14px">Your bag is saved on this device. Come back when you’re ready — prices and availability are checked again when you return.</div>'+cart.map((i,n)=>`<div class="cart-line"><img src="${i.image}" alt=""><div><div class="cart-line-name">${escapeXml(i.name)}</div><div class="cart-line-detail">${i.garment} • ${i.color}${i.garment==="Beanie"?"":` • Size ${i.size}`} • Qty ${i.qty}${i.prints&&i.prints.length?` • ${i.prints.join(", ")}`:""}</div><button class="remove" onclick="removeItem(${n})">REMOVE</button></div><strong>${money(i.total)}</strong></div>`).join("");
       footer.innerHTML=`<div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div>${appliedDiscount?`<div class="summary-row"><span>Discount (${escapeXml(appliedDiscount.code)})</span><b style="color:var(--red)">-${money(discountAmount())}</b></div>`:""}<div class="summary-row"><span>Shipping</span><span>${subtotal()>=FREE_SHIPPING_THRESHOLD?"FREE":"Calculated next"}</span></div><div class="summary-row total"><span>SUBTOTAL</span><span>${money(subtotal()-discountAmount())}</span></div></div>${subtotal()<FREE_SHIPPING_THRESHOLD?`<div class="section-note" style="margin:8px 0;color:var(--navy);font-weight:700">Add ${money(FREE_SHIPPING_THRESHOLD-subtotal())} more for FREE shipping!</div>`:`<div class="section-note" style="margin:8px 0;color:var(--navy);font-weight:700">You've unlocked FREE shipping 🎉</div>`}<div style="display:flex;gap:8px;margin:12px 0 4px"><input id="cart-discount-input" placeholder="DISCOUNT CODE" style="flex:1;border:1px solid var(--line);padding:8px;text-transform:uppercase" value="${appliedDiscount?appliedDiscount.code:''}"><button class="choice" onclick="applyDiscountCode('cart-discount-input','cart-discount-msg')">${appliedDiscount?"REMOVE":"APPLY"}</button></div><div id="cart-discount-msg" style="font-size:11px;color:var(--muted);margin-bottom:10px"></div><button class="checkout" onclick="startCheckout()">CONTINUE TO PAYPAL</button>`;
     }
     function shippingFee(){if(deliveryMethod!=="shipping")return 0;return subtotal()>=FREE_SHIPPING_THRESHOLD?0:SHIPPING_PRICE}
@@ -551,7 +577,7 @@
       if(appliedDiscount){
         appliedDiscount=null;
         if(msg)msg.textContent="Discount removed.";
-        renderCart();renderCheckout();
+        renderCart();refreshCheckoutTotals();
         return;
       }
       const raw=(input?.value||"").trim().toUpperCase();
@@ -561,11 +587,17 @@
       if(!match){if(msg)msg.textContent="Code not found or no longer active.";return}
       appliedDiscount={code:match.code,type:match.type,value:match.value};
       if(msg)msg.textContent=`"${match.code}" applied — ${match.type==="percent"?match.value+"% off":money(match.value)+" off"}.`;
-      renderCart();renderCheckout();
+      renderCart();refreshCheckoutTotals();
     }
-    function startCheckout(){deliveryMethod="shipping";closeOverlay("cart-overlay");renderCheckout();openOverlay("checkout-overlay");loadPayPal()}
+    function startCheckout(){if(!cart.length)return;deliveryMethod="shipping";closeOverlay("cart-overlay");renderCheckout();openOverlay("checkout-overlay");loadPayPal()}
     function renderCheckout(){
       document.getElementById("checkout-body").innerHTML=`<div class="checkout-layout"><div><div class="field"><label>FULL NAME</label><input id="buyer-name" autocomplete="name"></div><div class="field"><label>EMAIL</label><input id="buyer-email" type="email" autocomplete="email"></div><div class="field"><label>PHONE</label><input id="buyer-phone" autocomplete="tel"></div><div class="field"><label>DELIVERY</label><select id="delivery" onchange="setDelivery(this.value)"><option value="shipping">Ship my order (${subtotal()>=FREE_SHIPPING_THRESHOLD?"FREE":"+"+money(SHIPPING_PRICE)})</option><option value="pickup">Pickup in Roslindale</option></select></div><div class="field" id="address-field"><label>SHIPPING ADDRESS</label><textarea id="buyer-address" rows="3" placeholder="Street, city, state and ZIP"></textarea></div></div><div><div class="paypal-panel"><div class="paypal-logo">PayPal</div><div class="paypal-message">Complete your order below.</div><div id="paypal-button-container"></div><div class="paypal-placeholder" id="paypal-placeholder">CHECKOUT COMING SOON</div></div><div class="cart-summary"><div class="summary-row"><span>Merchandise</span><b>${money(subtotal())}</b></div><div class="summary-row" id="checkout-discount-row" style="${appliedDiscount?"":"display:none"}"><span>Discount${appliedDiscount?` (${escapeXml(appliedDiscount.code)})`:""}</span><b id="checkout-discount" style="color:var(--red)">-${money(discountAmount())}</b></div><div class="summary-row"><span>Shipping</span><b id="checkout-shipping">${shippingFee()===0&&deliveryMethod==="shipping"?"FREE":money(shippingFee())}</b></div><div class="summary-row total"><span>TOTAL</span><span id="checkout-total">${money(grandTotal())}</span></div></div><div style="display:flex;gap:8px;margin:12px 0 4px"><input id="checkout-discount-input" placeholder="DISCOUNT CODE" style="flex:1;border:1px solid var(--line);padding:8px;text-transform:uppercase" value="${appliedDiscount?appliedDiscount.code:''}"><button class="choice" onclick="applyDiscountCode('checkout-discount-input','checkout-discount-msg')">${appliedDiscount?"REMOVE":"APPLY"}</button></div><div id="checkout-discount-msg" style="font-size:11px;color:var(--muted)"></div></div></div>`;
+    }
+    function refreshCheckoutTotals(){
+      const row=document.getElementById("checkout-discount-row");if(row){row.style.display=appliedDiscount?"":"none";const label=row.querySelector("span");if(label)label.textContent=appliedDiscount?`Discount (${appliedDiscount.code})`:"Discount";}
+      const discount=document.getElementById("checkout-discount");if(discount)discount.textContent="-"+money(discountAmount());
+      const input=document.getElementById("checkout-discount-input");if(input){input.value=appliedDiscount?appliedDiscount.code:"";const button=input.nextElementSibling;if(button)button.textContent=appliedDiscount?"REMOVE":"APPLY";}
+      setDelivery(deliveryMethod);
     }
     function setDelivery(value){deliveryMethod=value;const address=document.getElementById("address-field");if(address)address.classList.toggle("hidden",value==="pickup");const ship=document.getElementById("checkout-shipping"),total=document.getElementById("checkout-total");if(ship)ship.textContent=shippingFee()===0&&deliveryMethod==="shipping"?"FREE":money(shippingFee());if(total)total.textContent=money(grandTotal())}
     function validBuyer(){
@@ -610,7 +642,7 @@
         buyerPhone:document.getElementById("buyer-phone")?.value||"",
         deliveryMethod,
         address:deliveryMethod==="shipping"?(document.getElementById("buyer-address")?.value||""):"Pickup in Roslindale",
-        items:cart.map(i=>({name:i.name,color:i.color,size:i.size,qty:i.qty,prints:i.prints||[],total:i.total})),
+        items:cart.map(i=>({name:i.name,color:i.color,size:i.size,qty:i.qty,garment:i.garment,productId:i.productId,prints:i.prints||[],total:i.total})),
         subtotal:subtotal(),
         discountCode:appliedDiscount?appliedDiscount.code:"",
         discountAmount:discountAmount(),
@@ -623,13 +655,14 @@
     function showSuccess(orderId){document.getElementById("checkout-body").innerHTML=`<div class="success"><div class="success-icon">✓</div><h3>PAYMENT COMPLETED</h3><p>Your payment was completed successfully. Save this order number for your records.</p><div class="order-id">${escapeXml(orderId)}</div><p>We’ll confirm production and fulfillment using the contact information supplied at checkout.</p><button class="primary" onclick="finishOrder()">DONE</button></div>`}
     function finishOrder(){cart=[];appliedDiscount=null;updateCartCount();closeOverlay("checkout-overlay")}
     function openOverlay(id){document.getElementById(id).classList.add("open");document.body.style.overflow="hidden"}
+    function zoomCurrentProduct(){if(current)openImageZoom(currentDisplayImage(current,PRODUCTS.indexOf(current)),current.name+" — "+selection.garment);}
     function openImageZoom(src,alt){
       const art=document.getElementById("zoom-art");
-      if(art)art.innerHTML=`<img src="${src}" alt="${alt}">${watermark()}`;
+      if(art)art.innerHTML=`<img src="${src}" alt="${escapeXml(alt)}">${watermark()}`;
       openOverlay("zoom-overlay");
     }
     function closeOverlay(id){
-      document.getElementById(id).classList.remove("open");document.body.style.overflow="";
+      document.getElementById(id).classList.remove("open");document.body.style.overflow=document.querySelector(".overlay.open")?"hidden":"";
       if(id==="product-overlay"){try{const url=new URL(window.location.href);url.searchParams.delete("product");history.replaceState(null,"",url);}catch(e){}}
     }
     const ADMIN_PIN="239367";
@@ -821,11 +854,12 @@
       pendingTeePhotos.set(id,job);
       job.catch(()=>{const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Could not prepare photo. Choose the file again.";});
     }
+    const pendingGarmentPhotos=new Map();
     function quickGarmentUpload(id,garment,input){
       const p=PRODUCTS.find(x=>x.id===id);if(!p||!input.files||!input.files[0])return;
-      const reader=new FileReader();
-      reader.onload=e=>{p.garmentImages=p.garmentImages||{};p.garmentImages[garment]=e.target.result;const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent=garment+" photo ready — tap SAVE TEE.";};
-      reader.readAsDataURL(input.files[0]);
+      const job=compressImage(input.files[0]).then(dataUrl=>{p.garmentImages=p.garmentImages||{};p.garmentImages[garment]=dataUrl;const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent=garment+" photo ready — tap SAVE TEE.";});
+      pendingGarmentPhotos.set(id+"::"+garment,job);
+      job.catch(()=>{const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Could not prepare garment photo. Choose it again.";});
     }
     async function quickSaveTee(id){
       const p=PRODUCTS.find(x=>x.id===id);if(!p)return;
@@ -835,6 +869,7 @@
       ["Hoodie","Beanie","Long Sleeve"].forEach(g=>{const el=document.getElementById("style-price-"+p.id+"-"+g.replace(/ /g,"-"));if(el)p.stylePrices[g]=Math.max(0,parseFloat(el.value)||0);});
       const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Saving & publishing…";
       try{
+        await Promise.all([...pendingGarmentPhotos].filter(([key])=>key.startsWith(id+"::")).map(([,job])=>job));
         const pending=pendingTeePhotos.get(id);
         if(pending){
           const photo=await pending;
@@ -1014,7 +1049,7 @@
       FREE_SHIPPING_THRESHOLD=freeValue;
       const ok=await saveSettings();
       if(msg)msg.textContent=ok?(`Saved — shipping is ${money(value)}, free over ${money(freeValue)}, for every visitor.`):"Saved for this session, but couldn't sync — check your connection and try again.";
-      renderCheckout();
+      refreshCheckoutTotals();
     }
     function renderWholesaleTab(){
       const sorted=WHOLESALE_TIERS.slice().sort((a,b)=>a.qty-b.qty);
@@ -1054,7 +1089,8 @@
       WHOLESALE_TIERS=updated.sort((a,b)=>a.qty-b.qty);
       const ok=await saveSettings();
       renderManageBody();
-      if(msg)msg.textContent=hadError?"Saved what was valid — check for blank or bad numbers.":(ok?"Live — bulk pricing updated for every visitor.":"Saved on this device, but couldn't reach Google Sheets — try again.");
+      const liveMsg=document.getElementById("wholesale-save-msg");
+      if(liveMsg)liveMsg.textContent=hadError?"Saved what was valid — check for blank or bad numbers.":(ok?"Live — bulk pricing updated for every visitor.":"Saved on this device, but couldn't reach Google Sheets — try again.");
     }
     function renderHoodiesTab(){
       return `<div class="section-note" style="margin-bottom:18px">Choose which hoodie colors show up when a customer adds the Hoodie Upgrade (+${money(HOODIE_PRICE)}) on any tee. Uncheck a color to pull it storewide — updates for every visitor as soon as you save.</div>
@@ -1236,19 +1272,18 @@
         applyPhotos();
       }catch(e){console.error("Could not load photos from Google Sheets",e)}
     }
-    function uploadToGallery(input){
-      const files=Array.from(input.files||[]);if(!files.length)return;
-      files.forEach(file=>{
-        compressImage(file).then(async dataUrl=>{
+    async function uploadToGallery(input){
+      const files=Array.from(input.files||[]);if(!files.length)return;input.value="";
+      for(const file of files){
+        try{
+          const dataUrl=await compressImage(file);
           const id="g"+Date.now()+Math.random().toString(36).slice(2,7);
-          const item={id,name:file.name.replace(/\.[a-z0-9]+$/i,""),dataUrl,city:"all",season:"All-Season",addedAt:Date.now()};
-          gallery.push(item);
+          gallery.push({id,name:file.name.replace(/\.[a-z0-9]+$/i,""),dataUrl,city:"all",season:"All-Season",addedAt:Date.now()});
           renderManageBody();
-          await savePhoto(id,dataUrl);
-          await saveSettings();
-        }).catch(()=>alert(`Could not read "${file.name}". Please try another file.`));
-      });
-      input.value="";
+          const photoSaved=await savePhoto(id,dataUrl),settingsSaved=await saveSettings();
+          if(!photoSaved||!settingsSaved)alert(`"${file.name}" could not be verified online. Keep this page open and upload it again.`);
+        }catch(e){alert(`Could not read "${file.name}". Please try another file.`);}
+      }
     }
     function setGalleryFilter(field,value){
       if(field==="city")galleryFilterCity=value;else galleryFilterSeason=value;
@@ -1367,6 +1402,19 @@
       await saveSettings();
     }
     /* ---- Settings persistence via the same Google Sheets Apps Script webhook ---- */
+    let settingsBaseline=null;
+    function mergeSettingsChanges(fresh,local,baseline){
+      const result={...fresh};
+      Object.keys(local).forEach(key=>{
+        if(JSON.stringify(local[key])===JSON.stringify(baseline&&baseline[key]))return;
+        const value=local[key],previous=baseline&&baseline[key];
+        if(value&&previous&&typeof value==="object"&&typeof previous==="object"&&!Array.isArray(value)&&!Array.isArray(previous)){
+          result[key]=mergeSettingsChanges(fresh&&fresh[key]||{},value,previous);
+        }else result[key]=value;
+      });
+      Object.keys(baseline||{}).forEach(key=>{if(!Object.hasOwn(local,key))delete result[key];});
+      return result;
+    }
     async function saveSettings(){
       if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return false;
       const settings={
@@ -1388,8 +1436,15 @@
         garmentImages:Object.fromEntries(PRODUCTS.map(p=>[p.id,p.garmentImages||{}]))
       };
       try{
-        await fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"settings",settings})});
-        return await verifyOnline("settings",saved=>Object.keys(settings).every(key=>JSON.stringify(saved[key])===JSON.stringify(settings[key])));
+        if(!settingsBaseline)throw new Error("Live settings have not loaded yet");
+        const response=await fetch(`${GOOGLE_SHEETS_WEBHOOK_URL}?type=settings&_=${Date.now()}`,{cache:"no-store"});
+        if(!response.ok)throw new Error("Could not read live settings");
+        const fresh=await response.json();if(!fresh||typeof fresh!=="object"||Array.isArray(fresh))throw new Error("Invalid live settings");
+        const merged=mergeSettingsChanges(fresh,settings,settingsBaseline);
+        await fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"settings",settings:merged})});
+        const verified=await verifyOnline("settings",saved=>Object.keys(merged).every(key=>JSON.stringify(saved[key])===JSON.stringify(merged[key])));
+        if(verified)settingsBaseline=JSON.parse(JSON.stringify(settings));
+        return verified;
       }catch(e){console.error("Could not save settings to Google Sheets",e);return false}
     }
     async function loadSettings(){
@@ -1397,7 +1452,9 @@
       try{
         const res=await fetch(`${GOOGLE_SHEETS_WEBHOOK_URL}?type=settings`);
         const settings=await res.json();
-        if(!settings||!Object.keys(settings).length)return;
+        if(!settings||typeof settings!=="object"||Array.isArray(settings))return;
+        settingsBaseline=JSON.parse(JSON.stringify(settings));
+        if(!Object.keys(settings).length)return;
         if(Array.isArray(settings.productOrder)){
           const byId=Object.fromEntries(PRODUCTS.map(p=>[p.id,p]));
           const reordered=settings.productOrder.map(id=>byId[id]).filter(Boolean);
@@ -1465,11 +1522,11 @@
       }catch(e){return false}
     }
     readCache();
-    renderProducts();updateCartCount();
+    renderProducts();
     (async()=>{
       try{await Promise.all([loadSettings(),loadPhotos()])}catch(e){console.error("Store refresh failed",e)}
       applyPhotos();
-      renderProducts();updateCartCount();writeCache();
+      restoreBag();renderProducts();updateCartCount();writeCache();
       openSharedProductFromUrl();
     })();
   </script>
