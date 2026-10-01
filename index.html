@@ -763,6 +763,8 @@
         <div style="font:900 13px Inter,sans-serif;color:var(--muted);margin-bottom:10px">${CITY_META[p.city].label.toUpperCase()} • #${pos}</div>
         <img id="quick-main-preview" src="${img}" alt="" style="width:100%;height:230px;object-fit:contain;background:#f1f1ee;border-radius:10px;margin-bottom:12px">
         <label class="add-bag" style="display:block;text-align:center;cursor:pointer;margin:0 0 14px">UPLOAD / REPLACE TEE<input type="file" accept="image/*" style="display:none" onchange="quickUpload('${p.id}',this)"></label>
+        <button class="choice" style="width:100%;padding:12px;margin-bottom:14px" onclick="openQuickGallery('${p.id}')">UPLOAD FROM GALLERY</button>
+        <div id="quick-gallery-picker"></div>
         <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px">
           <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin-bottom:8px">OPTIONAL GARMENT PHOTOS</div>
           <div style="font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:10px">The tee stays the main storefront image. Add these only when you have them.</div>
@@ -787,6 +789,24 @@
       if(checkbox.checked&&!has)product.colors.push(color);
       if(!checkbox.checked&&has)product.colors=product.colors.filter(c=>c!==color);
       const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Color updated — tap SAVE TEE.";
+    }
+    function openQuickGallery(productId){
+      const host=document.getElementById("quick-gallery-picker");if(!host)return;
+      const items=gallery.filter(g=>g.dataUrl||PHOTO_MAP[g.id]);
+      host.innerHTML=`<div style="border:1px solid var(--line);padding:12px;border-radius:10px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>Choose a gallery photo</b><button class="choice" onclick="document.getElementById('quick-gallery-picker').innerHTML=''">CLOSE</button></div>
+        ${items.length?`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">${items.map(g=>`<button class="choice" style="padding:6px;min-width:0" onclick="quickGalleryPhoto('${productId}','${g.id}')"><img src="${escapeXml(g.dataUrl||PHOTO_MAP[g.id])}" alt="${escapeXml(g.name)}" style="width:100%;height:90px;object-fit:contain"><span style="display:block;font-size:11px;overflow-wrap:anywhere">${escapeXml(g.name)}</span></button>`).join("")}</div>`:'<p>No saved photos yet. Add photos using the GALLERY tab, then return to this tee.</p>'}
+      </div>`;
+    }
+    function quickGalleryPhoto(productId,galleryId){
+      const p=PRODUCTS.find(x=>x.id===productId),g=gallery.find(x=>x.id===galleryId);
+      const dataUrl=g&&(g.dataUrl||PHOTO_MAP[g.id]);if(!p||!dataUrl)return;
+      const color=(p.colors&&p.colors[0])||"Black";
+      p.image=dataUrl;p.images=p.images||{};p.images[color]=dataUrl;
+      pendingTeePhotos.set(productId,Promise.resolve({key:productId+"::"+color,dataUrl}));
+      const preview=document.getElementById("quick-main-preview");if(preview)preview.src=dataUrl;
+      document.getElementById("quick-gallery-picker").innerHTML='';
+      const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Gallery photo ready — tap SAVE TEE.";
     }
     const pendingTeePhotos=new Map();
     function quickUpload(id,input){
