@@ -788,11 +788,18 @@
       if(!checkbox.checked&&has)product.colors=product.colors.filter(c=>c!==color);
       const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Color updated — tap SAVE TEE.";
     }
+    const pendingTeePhotos=new Map();
     function quickUpload(id,input){
       const p=PRODUCTS.find(x=>x.id===id);if(!p||!input.files||!input.files[0])return;
-      const reader=new FileReader();
-      reader.onload=e=>{p.image=e.target.result;p.images=p.images||{};p.images[(p.colors&&p.colors[0])||"Black"]=e.target.result;const preview=document.getElementById("quick-main-preview");if(preview)preview.src=e.target.result;const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Tee photo ready — tap SAVE TEE.";};
-      reader.readAsDataURL(input.files[0]);
+      const job=compressImage(input.files[0]).then(dataUrl=>{
+        const color=(p.colors&&p.colors[0])||"Black";
+        p.image=dataUrl;p.images=p.images||{};p.images[color]=dataUrl;
+        const preview=document.getElementById("quick-main-preview");if(preview)preview.src=dataUrl;
+        const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Tee photo ready — tap SAVE TEE.";
+        return {key:id+"::"+color,dataUrl};
+      });
+      pendingTeePhotos.set(id,job);
+      job.catch(()=>{const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Could not prepare photo. Choose the file again.";});
     }
     function quickGarmentUpload(id,garment,input){
       const p=PRODUCTS.find(x=>x.id===id);if(!p||!input.files||!input.files[0])return;
@@ -800,14 +807,24 @@
       reader.onload=e=>{p.garmentImages=p.garmentImages||{};p.garmentImages[garment]=e.target.result;const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent=garment+" photo ready — tap SAVE TEE.";};
       reader.readAsDataURL(input.files[0]);
     }
-    function quickSaveTee(id){
+    async function quickSaveTee(id){
       const p=PRODUCTS.find(x=>x.id===id);if(!p)return;
       const n=document.getElementById("name-input-"+id),pr=document.getElementById("price-input-"+id),d=document.getElementById("desc-input-"+id);
       if(n)p.name=n.value.trim()||p.name;if(pr)p.price=Math.max(0,parseFloat(pr.value)||0);if(d)p.description=d.value.trim();
       p.stylePrices=p.stylePrices||{};
       ["Hoodie","Beanie","Long Sleeve"].forEach(g=>{const el=document.getElementById("style-price-"+p.id+"-"+g.replace(/ /g,"-"));if(el)p.stylePrices[g]=Math.max(0,parseFloat(el.value)||0);});
       const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Saving & publishing…";
-      saveSettings().then(ok=>{renderProducts();if(msg)msg.textContent=ok?"Saved & live.":"Saved here; sync could not be confirmed.";});
+      try{
+        const pending=pendingTeePhotos.get(id);
+        if(pending){
+          const photo=await pending;
+          if(!await savePhoto(photo.key,photo.dataUrl))throw new Error("Photo not confirmed");
+          if(pendingTeePhotos.get(id)===pending)pendingTeePhotos.delete(id);
+        }
+        const ok=await saveSettings();renderProducts();writeCache();
+        if(msg)msg.textContent=ok?"Saved & verified online.":"Changes could not be verified online. Keep this page open and try SAVE TEE again.";
+      }catch(e){if(msg)msg.textContent="Photo could not be verified online. Keep this page open and try SAVE TEE again.";}
+
     }
     function renderDesignsTab(){
       return `<div class="section-note" style="margin-bottom:14px">Upload a photo, pick from your gallery, or use the arrows to rearrange order. Edit any name or price below, then hit <b>SAVE & GO LIVE</b> — that's the button that actually pushes everything to every visitor.</div>
@@ -1156,11 +1173,23 @@
         reader.readAsDataURL(file);
       });
     }
+    async function verifyOnline(type,expected){
+      for(let attempt=0;attempt<3;attempt++){
+        try{
+          const res=await fetch(`${GOOGLE_SHEETS_WEBHOOK_URL}?type=${type}&_=${Date.now()}`,{cache:"no-store"});
+          if(res.ok&&expected(await res.json()))return true;
+        }catch(e){console.error("Online verification failed",e);}
+        if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000));
+      }
+      return false;
+    }
     async function savePhoto(key,dataUrl){
       if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return false;
       try{
         await fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"photo",key,dataUrl})});
-        return true;
+        const verified=await verifyOnline("photos",photos=>dataUrl?photos[key]===dataUrl:!photos[key]);
+        if(verified)PHOTO_MAP[key]=dataUrl;
+        return verified;
       }catch(e){console.error("Could not save photo",e);return false}
     }
     function applyPhotos(){
@@ -1340,7 +1369,7 @@
       };
       try{
         await fetch(GOOGLE_SHEETS_WEBHOOK_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({type:"settings",settings})});
-        return true;
+        return await verifyOnline("settings",saved=>Object.keys(settings).every(key=>JSON.stringify(saved[key])===JSON.stringify(settings[key])));
       }catch(e){console.error("Could not save settings to Google Sheets",e);return false}
     }
     async function loadSettings(){
