@@ -33,6 +33,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <style>
     :root{--navy:#071d49;--blue:#123e8c;--red:#d71936;--cream:#ffffff;--ink:#071d49;--muted:#697181;--line:#dfe3ea;--gold:#d71936;--shadow:0 18px 45px rgba(7,29,73,.14)}
+    .city-story{font-size:13px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;margin:12px 0;color:var(--red)}.city-skyline{width:min(340px,100%);height:100px;color:var(--blue);opacity:.85;margin-top:10px}.city-skyline svg{width:100%;height:100%}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#fff;color:var(--ink);font-family:Inter,Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}img{-webkit-user-drag:none;user-select:none}.hidden{display:none!important}
     .announcement{background:var(--red);color:#fff;text-align:center;padding:9px 14px;font:800 12px/1.2 Inter,sans-serif;letter-spacing:1.8px;text-transform:uppercase}
     .site-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px clamp(16px,4vw,52px);background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
@@ -192,7 +193,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     <div class="hero-copy">
       <div class="eyebrow" id="hero-badge">Ten standout designs</div>
       <h1>TOP 10<br>TEES</h1>
-      <p id="hero-sub">Start with the logo. Tap the design you want, then choose a T-shirt, hoodie, or crew neck.</p>
+      <p id="hero-sub">Choose your city. Pick your design. Rock the classic T-shirt.</p><div id="city-story" class="city-story" aria-live="polite"></div><div id="city-skyline" class="city-skyline" aria-hidden="true"></div>
       <div class="hero-actions"><button class="primary" onclick="document.getElementById('collection').scrollIntoView()">Shop the ten</button><button class="secondary" onclick="openCart()">View bag</button></div>
     </div>
     <div class="hero-stamp"><div class="stamp-inner"><div class="stamp-sg">10</div><div class="stamp-rule"></div><div class="stamp-copy">TOP 10 TEES</div><div class="stamp-small">ORIGINAL COLLECTION</div></div></div>
@@ -288,8 +289,8 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       {id:"D1010",name:"TOP TEN DETROIT 10",tag:"Detroit Exclusive",price:30,accent:"#a6132b",image:"",colors:["Black","White","Blue","Gray"],city:"detroit"}
     ];
     const CITY_META={
-      boston:{label:"Boston",badge:"BOSTON EDITION",sub:"Start with the logo. Tap your design, then choose a T-shirt, hoodie, or crew neck — Boston made."},
-      detroit:{label:"Detroit",badge:"DETROIT EDITION",sub:"Straight off the D. Start with the logo, then choose a T-shirt, hoodie, or crew neck."}
+      boston:{label:"Boston",badge:"BOSTON EDITION",sub:"Boston Top Tens: red, white and blue, a B cap and jeans. You are good to go.",story:"Boston style. Neighborhood pride. Classic kicks."},
+      detroit:{label:"Detroit",badge:"DETROIT EDITION",sub:"Detroit Top Tens: basketball roots, city pride and a sneaker tradition all their own.",story:"Motor City heritage. Basketball culture. Streetwear pride."}
     };
 
     /* ================================================================
@@ -374,6 +375,9 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     const BEANIE_PRICE=24.99;
     const LONG_SLEEVE_PRICE=34.99;
     const PRODUCT_STYLES=["Tee","Long Sleeve","Crew Neck","Hoodie","Beanie"];
+    // Launch phase: storefront sells tees only. Keep all styles editable in admin.
+    const STOREFRONT_STYLES=["Tee"];
+    function customerStyles(product){return STOREFRONT_STYLES.filter(style=>availableStyles(product).includes(style));}
     const ALL_HOODIE_COLORS=["Black","White","Gray","Navy","Red","Maroon","Olive","Charcoal"];
     const HOODIE_COLOR_HEX={Black:"#101418",White:"#ffffff",Gray:"#b6b6b6",Navy:"#1f2a44",Red:"#d71936",Maroon:"#6b1220",Olive:"#5b5a34",Charcoal:"#36393f"};
     let HOODIE_COLORS=["Black","Gray","Navy"];
@@ -500,10 +504,17 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       const el=document.getElementById("city-toggle");if(!el)return;
       el.innerHTML=Object.keys(CITY_META).map(c=>`<button type="button" class="${currentCity===c?'on':''}" onclick="setCity('${c}')">${CITY_META[c].label}</button>`).join("");
     }
+    function citySkyline(city){
+      const boston="0,100 0,77 22,77 22,49 40,49 40,69 58,69 58,34 74,34 74,56 92,56 92,14 108,14 108,57 127,57 127,43 144,43 144,66 161,66 161,26 174,26 174,55 195,55 195,37 210,37 210,70 231,70 231,48 248,48 248,100";
+      const detroit="0,100 0,76 23,76 23,56 44,56 44,68 64,68 64,43 85,43 85,63 104,63 104,12 114,12 114,4 125,12 125,63 145,63 145,29 166,29 166,55 184,55 184,40 204,40 204,69 226,69 226,51 248,51 248,100";
+      return `<svg viewBox="0 0 248 100" role="presentation" preserveAspectRatio="xMidYMax meet"><polygon points="${city==="detroit"?detroit:boston}" fill="currentColor"/><path d="M0 99H248" stroke="currentColor" stroke-width="2"/></svg>`;
+    }
     function renderCityChrome(){
       const meta=CITY_META[currentCity];if(!meta)return;
       const badge=document.getElementById("hero-badge");if(badge)badge.textContent=meta.badge;
       const sub=document.getElementById("hero-sub");if(sub)sub.textContent=meta.sub;
+      const story=document.getElementById("city-story");if(story)story.textContent=meta.story;
+      const skyline=document.getElementById("city-skyline");if(skyline)skyline.innerHTML=citySkyline(currentCity);
     }
     function setCity(city){
       if(!CITY_META[city]||city===currentCity){currentCity=CITY_META[city]?city:currentCity;}
@@ -523,7 +534,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
         const avail=Object.keys(SIZE_UPCHARGE).find(sz=>getStock(current,firstColor,sz)>0);
         if(avail)size=avail;
       }
-      selection={garment:availableStyles(current)[0]||"Tee",color:firstColor,size,qty:1,prints:[]};if(selection.garment==="Beanie")selection.size="One Size";renderProductModal();openOverlay("product-overlay");
+      selection={garment:customerStyles(current)[0]||"Tee",color:firstColor,size,qty:1,prints:[]};if(selection.garment==="Beanie")selection.size="One Size";renderProductModal();openOverlay("product-overlay");
       try{const url=new URL(window.location.href);url.searchParams.set("product",current.id);url.searchParams.set("city",current.city||currentCity);history.replaceState(null,"",url);}catch(e){}
     }
     function renderChoices(values,key){return values.map(v=>`<button class="choice ${selection[key]===v?'on':''}" onclick="setChoice('${key}','${v}')">${v}${key==='garment'&&GARMENTS[v]?` +${money(GARMENTS[v])}`:''}</button>`).join("")}
@@ -562,14 +573,14 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       return (product.stylePrices&&typeof product.stylePrices[style]==="number")?product.stylePrices[style]:defaults[style];
     }
     function renderStyleChoices(){
-      return (setQueue.length?[setQueue[0]]:availableStyles(current)).map(g=>{
+      return (setQueue.length?[setQueue[0]]:customerStyles(current)).map(g=>{
         const img=garmentPreview(current,g,selection.color,PRODUCTS.indexOf(current));
         const label=g==="Tee"?"SHORT-SLEEVE T-SHIRT":g.toUpperCase();
         return `<button class="choice ${selection.garment===g?'on':''}" onclick="setStyle('${g}')" style="width:108px;padding:8px"><img src="${img}" alt="" style="width:90px;height:78px;object-fit:contain;display:block;background:#f7f7f4;margin:0 auto 6px"><span style="display:block;font-size:10px;font-weight:900">${label}</span><span style="display:block;font-size:10px;margin-top:3px">${money(stylePrice(current,g))}</span></button>`;
       }).join("");
     }
     function setStyle(style){
-      if(!availableStyles(current).includes(style))return;
+      if(!customerStyles(current).includes(style))return;
       selection.garment=style;
       if(style==="Beanie"){selection.size="One Size";selection.prints=[];}else if(selection.size==="One Size")selection.size="L";
       selection.prints=[];
@@ -591,12 +602,12 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     }
     function zoomOutfitMain(){if(current)openImageZoom(productArt(current,PRODUCTS.indexOf(current)),current.name);}
     function initOutfit(){
-      outfitBundleMode=false;activeOutfitStyle=availableStyles(current)[0]||"Tee";
-      outfitDraft={productId:current.id,rows:Object.fromEntries(availableStyles(current).map((g,i)=>[g,{selected:i===0,garment:g,color:(current.colors||COLORS)[0],size:g==="Beanie"?"One Size":"L",qty:1,prints:[]}]))};
+      outfitBundleMode=false;activeOutfitStyle=customerStyles(current)[0]||"Tee";
+      outfitDraft={productId:current.id,rows:Object.fromEntries(customerStyles(current).map((g,i)=>[g,{selected:i===0,garment:g,color:(current.colors||COLORS)[0],size:g==="Beanie"?"One Size":"L",qty:1,prints:[]}]))};
     }
     function outfitItems(){
       if(!current||!outfitDraft)return [];
-      return Object.values(outfitDraft.rows).filter(row=>row.selected&&availableStyles(current).includes(row.garment)).map(row=>{
+      return Object.values(outfitDraft.rows).filter(row=>row.selected&&customerStyles(current).includes(row.garment)).map(row=>{
         const prints=validPrints(row.garment,row.prints);
         const total=(stylePrice(current,row.garment)+(row.garment==="Beanie"?0:(SIZE_UPCHARGE[row.size]||0))+addonTotal(row.garment,prints))*row.qty;
         return {productId:current.id,name:current.name,image:garmentPreview(current,row.garment,row.color,PRODUCTS.indexOf(current)),...row,prints,total,bundleId:outfitBundleMode?"draft-bundle":null};
@@ -604,7 +615,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     }
     function scrollToOutfitOptions(){const el=document.getElementById("outfit-options");if(el)el.scrollIntoView({behavior:"smooth",block:"nearest"});}
     function selectOutfitStyle(style){
-      if(!availableStyles(current).includes(style))return;
+      if(!customerStyles(current).includes(style))return;
       activeOutfitStyle=style;
       if(!outfitBundleMode)Object.values(outfitDraft.rows).forEach(row=>row.selected=false);
       outfitDraft.rows[style].selected=true;
@@ -642,7 +653,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       document.getElementById("product-modal-body").innerHTML=`<h3 style="margin:0 0 12px;color:var(--navy)">${escapeXml(current.name)}</h3>
       <div class="focused-garment-preview modal-art" onclick="zoomActiveOutfit()"><img src="${garmentPreview(current,style,row.color,PRODUCTS.indexOf(current))}" alt="${escapeXml(current.name)} — ${style}">${watermark()}<div class="zoom-hint">TAP TO ZOOM</div></div>
       <div class="outfit-mode-switch"><button class="choice ${!outfitBundleMode?'on':''}" onclick="setOutfitMode(false)">ONE GARMENT</button><button class="choice ${outfitBundleMode?'on':''}" onclick="setOutfitMode(true)">BUILD A SET</button></div>
-      <div class="choice-title">CHOOSE YOUR GARMENT</div><div class="focused-style-choices">${availableStyles(current).map(g=>`<button class="choice ${g===style?'on':''}" onclick="selectOutfitStyle('${g}')"><img src="${garmentPreview(current,g,outfitDraft.rows[g].color,PRODUCTS.indexOf(current))}" alt="" style="width:64px;height:58px;object-fit:contain;display:block;margin:0 auto 4px"><span>${g==='Tee'?'T-shirt':g}</span><small style="display:block">${money(stylePrice(current,g))}</small></button>`).join('')}</div>
+      <div class="choice-title">CHOOSE YOUR GARMENT</div><div class="focused-style-choices">${customerStyles(current).map(g=>`<button class="choice ${g===style?'on':''}" onclick="selectOutfitStyle('${g}')"><img src="${garmentPreview(current,g,outfitDraft.rows[g].color,PRODUCTS.indexOf(current))}" alt="" style="width:64px;height:58px;object-fit:contain;display:block;margin:0 auto 4px"><span>${g==='Tee'?'T-shirt':g}</span><small style="display:block">${money(stylePrice(current,g))}</small></button>`).join('')}</div>
       ${outfitBundleMode?`<p class="section-note" style="margin:10px 0">Choose 2+ pieces to build a set. Choose each size below. 3+ pieces of this design save ${BUNDLE_PERCENT}%.</p><div class="choices">${Object.values(outfitDraft.rows).filter(r=>r.selected).map(r=>`<span class="choice" style="display:flex;gap:6px;align-items:center"><button style="border:0;background:none;color:inherit;font-size:11px" onclick="selectOutfitStyle('${r.garment}')">${r.garment==='Tee'?'T-shirt':r.garment} · ${r.size} · ${r.qty}</button><button aria-label="Remove ${r.garment} from set" style="border:0;background:none;color:var(--red)" onclick="editOutfit('${r.garment}','selected',false)">×</button></span>`).join('')}</div>`:''}
       <button class="outfit-size-cue" onclick="scrollToOutfitOptions()">Choose size &amp; color below ↓</button><div id="outfit-options" class="choice-title">${style==='Tee'?'T-SHIRT':style.toUpperCase()} OPTIONS</div><div style="display:flex;gap:12px;flex-wrap:wrap"><label style="font-size:12px">Color<select style="display:block;padding:9px" onchange="editOutfit('${style}','color',this.value)">${colors.map(c=>`<option ${c===row.color?'selected':''}>${c}</option>`).join('')}</select></label>${style==='Beanie'?'<span style="padding:12px;font-size:12px;font-weight:700">ONE SIZE FITS ALL</span>':`<label style="font-size:12px">Size<select style="display:block;padding:9px" onchange="editOutfit('${style}','size',this.value)">${Object.keys(SIZE_UPCHARGE).map(size=>`<option value="${size}" ${size===row.size?'selected':''}>${size}${SIZE_UPCHARGE[size]?' +'+money(SIZE_UPCHARGE[size]):''}</option>`).join('')}</select></label>`}<label style="font-size:12px">Quantity<input type="number" style="display:block;width:65px;padding:9px" min="1" max="${retailQtyCap()}" value="${row.qty}" onchange="editOutfit('${style}','qty',this.value)"></label></div>${addonRule(style).enabled?`<div style="margin-top:10px">${Object.keys(PRINTS).map(p=>`<label style="display:block;font-size:12px"><input type="checkbox" ${row.prints.includes(p)?'checked':''} onchange="editOutfit('${style}','print','${p}')">${p} +${money(addonRule(style).prices[p])}</label>`).join('')}</div>`:''}
       <div class="outfit-footer" id="outfit-footer"><details class="outfit-total-details"><summary><span>${outfitBundleMode?'Set total':'Garment price'} <strong>${money(total-discount)}</strong><small>${pieces} selected${cart.length?' · '+cart.reduce((n,i)=>n+i.qty,0)+' in bag':''}</small></span><span class="outfit-details-label">Details ▾</span></summary><div class="outfit-breakdown"><div class="summary-row"><span>Selected garments</span><b>${money(items.reduce((n,item)=>n+item.total,0))}</b></div>${discount>0?`<div class="summary-row"><span>Bundle savings (${BUNDLE_PERCENT}%)</span><b>-${money(discount)}</b></div>`:''}<small>Shipping is shown at checkout. Bundle savings exclude size and extra-print charges.</small>${cart.length?'<button class="choice" style="margin-top:8px" onclick="openCart()">VIEW BAG</button>':''}</div></details><div class="outfit-footer-actions"><button class="add-bag" onclick="addOutfit(false)" ${!items.length||(outfitBundleMode&&pieces<2)?'disabled':''}>${outfitBundleMode?'ADD SET TO BAG':'ADD TO BAG'}</button><button class="checkout" onclick="addOutfit(true)" ${(!items.length&&!cart.length)||(outfitBundleMode&&items.length&&pieces<2)?'disabled':''}>CHECKOUT</button></div><div id="outfit-status" role="status"></div></div>`;
