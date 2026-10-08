@@ -33,8 +33,6 @@
   <meta name="mobile-web-app-capable" content="yes">
   <style>
     :root{--navy:#071d49;--blue:#123e8c;--red:#d71936;--cream:#ffffff;--ink:#071d49;--muted:#697181;--line:#dfe3ea;--gold:#d71936;--shadow:0 18px 45px rgba(7,29,73,.14)}
-    .topten-history{padding:30px clamp(18px,5vw,70px);background:#071d49;color:white;text-align:center}.topten-history h2{font-size:clamp(22px,3vw,36px);margin:10px 0}.topten-history p{max-width:780px;margin:12px auto;line-height:1.65}.history-kicker{font-size:12px;letter-spacing:.18em;color:#f36a7e;font-weight:900}.history-source{font-size:12px;opacity:.82}.history-source a{color:white;text-decoration:underline}
-    .city-story{font-size:13px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;margin:12px 0;color:var(--red)}.city-skyline{width:min(340px,100%);height:100px;color:var(--blue);opacity:.85;margin-top:10px}.city-skyline svg{width:100%;height:100%}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#fff;color:var(--ink);font-family:Inter,Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}img{-webkit-user-drag:none;user-select:none}.hidden{display:none!important}
     .announcement{background:var(--red);color:#fff;text-align:center;padding:9px 14px;font:800 12px/1.2 Inter,sans-serif;letter-spacing:1.8px;text-transform:uppercase}
     .site-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px clamp(16px,4vw,52px);background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
@@ -190,15 +188,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     </div>
   </header>
 
-  <section class="hero">
-    <div class="hero-copy">
-      <div class="eyebrow" id="hero-badge">Ten standout designs</div>
-      <h1>TOP 10<br>TEES</h1>
-      <p id="hero-sub">Choose your city. Pick your design. Rock the classic T-shirt.</p><div id="city-story" class="city-story" aria-live="polite"></div><div id="city-skyline" class="city-skyline" aria-hidden="true"></div>
-      <div class="hero-actions"><button class="primary" onclick="document.getElementById('collection').scrollIntoView()">Shop the ten</button><button class="secondary" onclick="openCart()">View bag</button></div>
-    </div>
-    <div class="hero-stamp"><div class="stamp-inner"><div class="stamp-sg">10</div><div class="stamp-rule"></div><div class="stamp-copy">TOP 10 TEES</div><div class="stamp-small">ORIGINAL COLLECTION</div></div></div>
-  </section>
+  <section class="hero" style="padding:16px 20px;min-height:0"><div class="hero-copy" style="max-width:100%;text-align:center"><h1 style="font-size:clamp(24px,4vw,40px);margin:0">TOP 10 TEES</h1><p id="hero-sub" style="margin:6px 0">Pick your city. Pick your T-shirt.</p><div id="hero-badge" class="eyebrow" style="margin:0">BOSTON EDITION</div></div></section>
 
   <div class="trust-strip">
     <div class="trust"><b>FREE SHIPPING $99+</b><span>OR PICK UP IN ROSLINDALE</span></div>
@@ -207,7 +197,6 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     <div class="trust"><b>REAL SUPPORT</b><span>CALL OR EMAIL US DIRECT</span></div>
   </div>
 
-  <section class="topten-history" aria-labelledby="history-title"><div class="history-kicker">THE LEGACY • SINCE 1979</div><h2 id="history-title">BORN ON THE COURT. CLAIMED BY THE STREETS.</h2><p>The adidas Top Ten debuted in 1979 as a basketball shoe, inspired by the demands of elite players. Its unmistakable high-top profile moved from the hardwood into everyday style and sneaker culture.</p><p><strong>Boston or Detroit?</strong> Two cities, two traditions, one shared love for the Top Tens. Choose your city and represent your side.</p><p class="history-source">Historical reference: <a href="https://www.adidas.com/us/blog/966200-the-history-of-adidas-basketball-origins-of-the-2023-collection" target="_blank" rel="noopener noreferrer">adidas Basketball history</a>. Top 10 Tees is an independent Seymore Green project, not affiliated with adidas.</p></section>
   <main id="collection">
     <div class="section-head">
       <div><div class="section-kicker">THE TOP 10 COLLECTION</div><h2>Pick your design</h2></div>
@@ -506,17 +495,11 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       const el=document.getElementById("city-toggle");if(!el)return;
       el.innerHTML=Object.keys(CITY_META).map(c=>`<button type="button" class="${currentCity===c?'on':''}" onclick="setCity('${c}')">${CITY_META[c].label}</button>`).join("");
     }
-    function citySkyline(city){
-      const boston="0,100 0,77 22,77 22,49 40,49 40,69 58,69 58,34 74,34 74,56 92,56 92,14 108,14 108,57 127,57 127,43 144,43 144,66 161,66 161,26 174,26 174,55 195,55 195,37 210,37 210,70 231,70 231,48 248,48 248,100";
-      const detroit="0,100 0,76 23,76 23,56 44,56 44,68 64,68 64,43 85,43 85,63 104,63 104,12 114,12 114,4 125,12 125,63 145,63 145,29 166,29 166,55 184,55 184,40 204,40 204,69 226,69 226,51 248,51 248,100";
-      return `<svg viewBox="0 0 248 100" role="presentation" preserveAspectRatio="xMidYMax meet"><polygon points="${city==="detroit"?detroit:boston}" fill="currentColor"/><path d="M0 99H248" stroke="currentColor" stroke-width="2"/></svg>`;
-    }
     function renderCityChrome(){
       const meta=CITY_META[currentCity];if(!meta)return;
       const badge=document.getElementById("hero-badge");if(badge)badge.textContent=meta.badge;
       const sub=document.getElementById("hero-sub");if(sub)sub.textContent=meta.sub;
-      const story=document.getElementById("city-story");if(story)story.textContent=meta.story;
-      const skyline=document.getElementById("city-skyline");if(skyline)skyline.innerHTML=citySkyline(currentCity);
+
     }
     function setCity(city){
       if(!CITY_META[city]||city===currentCity){currentCity=CITY_META[city]?city:currentCity;}
