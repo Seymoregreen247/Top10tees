@@ -184,7 +184,14 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
 #checkout-discount-input{min-width:0}
 @media(max-width:720px){#checkout-overlay{padding:10px}#checkout-overlay .modal{height:94dvh;max-height:94dvh}#checkout-overlay .modal-head{padding:12px 14px}#checkout-overlay .modal-title{font-size:22px}#checkout-body{padding:14px}.field input,.field select,.field textarea,#checkout-discount-input,#product-modal-body input,#product-modal-body select{font-size:16px}}
 @supports not (height:1dvh){#checkout-overlay .modal{height:92vh;max-height:92vh}}
-</style></head>
+</style><style>
+.collection-countdown{grid-column:1/-1;text-align:center;padding:52px 16px 60px;border:1px solid var(--line);background:#fff}
+.countdown-kicker{color:var(--red);font-size:11px;font-weight:900;letter-spacing:4px}
+.collection-countdown h3{font:900 clamp(30px,6vw,52px)/1.1 Barlow Condensed,Arial,sans-serif;color:var(--navy);margin:16px 0 8px}
+.countdown-number{min-height:130px;font:900 120px/1.1 Barlow Condensed,Arial,sans-serif;color:var(--red)}
+.collection-countdown p{font-size:13px;color:var(--muted);margin:12px 0 0}
+</style>
+</head>
 <body>
   <div class="announcement">THE TOP 10 • BOSTON + DETROIT</div>
   <div class="city-bar"><div class="city-toggle" id="city-toggle"></div></div>
@@ -472,11 +479,39 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       return (base+sizeUp+printUp)*selection.qty;
     }
 
+    let collectionCountdownValue=5;
+    let collectionCountdownTimer=null;
+    let finishCollectionCountdown=null;
+    function renderCollectionCountdown(){
+      return `<div class="collection-countdown" role="status" aria-live="polite"><div class="countdown-kicker">TOP 10 TEES</div><h3>Are you ready for the latest?</h3><div id="collection-countdown-number" class="countdown-number">${collectionCountdownValue||""}</div><p id="collection-countdown-copy">${collectionCountdownValue?"Your next favorite tee is coming…":"Almost here — loading the latest tees…"}</p></div>`;
+    }
+    function stopCollectionCountdown(){
+      clearTimeout(collectionCountdownTimer);collectionCountdownTimer=null;
+      if(finishCollectionCountdown){const finish=finishCollectionCountdown;finishCollectionCountdown=null;finish();}
+    }
+    function startCollectionCountdown(){
+      stopCollectionCountdown();collectionCountdownValue=5;
+      return new Promise(resolve=>{
+        finishCollectionCountdown=resolve;
+        function tick(){
+          collectionCountdownValue--;
+          const number=document.getElementById("collection-countdown-number");
+          if(number)number.textContent=collectionCountdownValue||"";
+          if(collectionCountdownValue>0){collectionCountdownTimer=setTimeout(tick,1000);}
+          else{
+            const copy=document.getElementById("collection-countdown-copy");
+            if(copy)copy.textContent="Almost here — loading the latest tees…";
+            stopCollectionCountdown();
+          }
+        }
+        collectionCountdownTimer=setTimeout(tick,1000);
+      });
+    }
     let storefrontReady=false;
     let storefrontLoadError=false;
     function renderProducts(){
       if(!storefrontReady){
-        document.getElementById("product-grid").innerHTML=storefrontLoadError?'<div role="alert" style="grid-column:1/-1;padding:32px;text-align:center">We could not load the latest designs. Please try again.<br><button class="choice" style="margin-top:16px" onclick="refreshStorefront()">RETRY</button></div>':'<div role="status" aria-live="polite" style="grid-column:1/-1;padding:48px;text-align:center">Loading the latest designs…</div>';
+        document.getElementById("product-grid").innerHTML=storefrontLoadError?'<div role="alert" style="grid-column:1/-1;padding:32px;text-align:center">We could not load the latest designs. Please try again.<br><button class="choice" style="margin-top:16px" onclick="refreshStorefront()">RETRY</button></div>':renderCollectionCountdown();
         renderCityToggle();renderCityChrome();return;
       }
 
@@ -1833,6 +1868,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     let storefrontRefreshPromise=null;
     function refreshStorefront(){
       if(storefrontRefreshPromise)return storefrontRefreshPromise;
+      const countdown=startCollectionCountdown();
       storefrontReady=false;storefrontLoadError=false;renderProducts();
       storefrontRefreshPromise=(async()=>{
         try{
@@ -1840,10 +1876,12 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
           const results=await Promise.allSettled([loadSettings(),loadPhotos()]);
           if(results.some(result=>result.status==="rejected"))throw new Error("Latest collection unavailable");
           applyPhotos();
+          await countdown;
           storefrontReady=true;
           restoreBag();renderProducts();updateCartCount();writeCache();
           openSharedProductFromUrl();
         }catch(e){
+          stopCollectionCountdown();
           console.error("Store refresh failed",e);
           storefrontLoadError=true;renderProducts();
         }finally{storefrontRefreshPromise=null;}
