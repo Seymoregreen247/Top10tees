@@ -202,6 +202,12 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
 .history-copy .history-signoff{font-weight:800;color:var(--navy);margin-top:12px}
 @media(max-width:600px){.brand-history{grid-template-columns:1fr;gap:18px;margin:0 12px 32px;padding:24px 18px}.history-years{display:flex;align-items:center;justify-content:center;gap:14px}.history-years strong{font-size:54px}.history-years span{margin:0}.history-copy p{font-size:13px}}
 </style>
+<style id="city-strip-colors">
+body[data-shop-city="boston"] .announcement{background:var(--red)}
+body[data-shop-city="detroit"] .announcement{background:var(--navy)}
+body[data-shop-city="boston"] .city-bar{border-bottom-color:var(--red)}
+body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
+</style>
 </head>
 <body>
   <div class="announcement">THE TOP 10 • BOSTON + DETROIT</div>
