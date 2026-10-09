@@ -376,7 +376,8 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     const PRODUCT_STYLES=["Tee","Long Sleeve","Crew Neck","Hoodie","Beanie"];
     // Launch phase: storefront sells tees only. Keep all styles editable in admin.
     const STOREFRONT_STYLES=["Tee"];
-    function customerStyles(product){return STOREFRONT_STYLES.filter(style=>availableStyles(product).includes(style));}
+    let adminSetMode=false;
+    function customerStyles(product){return adminSetMode&&manageUnlocked?availableStyles(product):STOREFRONT_STYLES.filter(style=>availableStyles(product).includes(style));}
     const ALL_HOODIE_COLORS=["Black","White","Gray","Navy","Red","Maroon","Olive","Charcoal"];
     const HOODIE_COLOR_HEX={Black:"#101418",White:"#ffffff",Gray:"#b6b6b6",Navy:"#1f2a44",Red:"#d71936",Maroon:"#6b1220",Olive:"#5b5a34",Charcoal:"#36393f"};
     let HOODIE_COLORS=["Black","Gray","Navy"];
@@ -520,6 +521,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       renderProducts();
     }
     function chooseProduct(index){
+      adminSetMode=false;
       setQueue=[];
       const target=PRODUCTS[index];
       if(target&&isProductLocked(target)){focusUnlockInput();return;}
@@ -618,6 +620,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       renderProductModal();
     }
     function setOutfitMode(bundle){
+      if(bundle&&!(adminSetMode&&manageUnlocked))return;
       outfitBundleMode=bundle;
       if(!bundle)Object.values(outfitDraft.rows).forEach(row=>row.selected=row.garment===activeOutfitStyle);
       else outfitDraft.rows[activeOutfitStyle].selected=true;
@@ -648,7 +651,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       const style=activeOutfitStyle,row=outfitDraft.rows[style];
       document.getElementById("product-modal-body").innerHTML=`<h3 style="margin:0 0 12px;color:var(--navy)">${escapeXml(current.name)}</h3>
       <div class="focused-garment-preview modal-art" onclick="zoomActiveOutfit()"><img src="${garmentPreview(current,style,row.color,PRODUCTS.indexOf(current))}" alt="${escapeXml(current.name)} — ${style}">${watermark()}<div class="zoom-hint">TAP TO ZOOM</div></div>
-      <div class="outfit-mode-switch"><button class="choice ${!outfitBundleMode?'on':''}" onclick="setOutfitMode(false)">ONE GARMENT</button><button class="choice ${outfitBundleMode?'on':''}" onclick="setOutfitMode(true)">BUILD A SET</button></div>
+      ${adminSetMode&&manageUnlocked?`<div class="outfit-mode-switch"><button class="choice ${!outfitBundleMode?'on':''}" onclick="setOutfitMode(false)">ONE GARMENT</button><button class="choice ${outfitBundleMode?'on':''}" onclick="setOutfitMode(true)">BUILD A SET</button></div>`:''}
       <div class="choice-title">CHOOSE YOUR GARMENT</div><div class="focused-style-choices">${customerStyles(current).map(g=>`<button class="choice ${g===style?'on':''}" onclick="selectOutfitStyle('${g}')"><img src="${garmentPreview(current,g,outfitDraft.rows[g].color,PRODUCTS.indexOf(current))}" alt="" style="width:64px;height:58px;object-fit:contain;display:block;margin:0 auto 4px"><span>${g==='Tee'?'T-shirt':g}</span><small style="display:block">${money(stylePrice(current,g))}</small></button>`).join('')}</div>
       ${outfitBundleMode?`<p class="section-note" style="margin:10px 0">Choose 2+ pieces to build a set. Choose each size below. 3+ pieces of this design save ${BUNDLE_PERCENT}%.</p><div class="choices">${Object.values(outfitDraft.rows).filter(r=>r.selected).map(r=>`<span class="choice" style="display:flex;gap:6px;align-items:center"><button style="border:0;background:none;color:inherit;font-size:11px" onclick="selectOutfitStyle('${r.garment}')">${r.garment==='Tee'?'T-shirt':r.garment} · ${r.size} · ${r.qty}</button><button aria-label="Remove ${r.garment} from set" style="border:0;background:none;color:var(--red)" onclick="editOutfit('${r.garment}','selected',false)">×</button></span>`).join('')}</div>`:''}
       <button class="outfit-size-cue" onclick="scrollToOutfitOptions()">Choose size &amp; color below ↓</button><div id="outfit-options" class="choice-title">${style==='Tee'?'T-SHIRT':style.toUpperCase()} OPTIONS</div><div style="display:flex;gap:12px;flex-wrap:wrap"><label style="font-size:12px">Color<select style="display:block;padding:9px" onchange="editOutfit('${style}','color',this.value)">${colors.map(c=>`<option ${c===row.color?'selected':''}>${c}</option>`).join('')}</select></label>${style==='Beanie'?'<span style="padding:12px;font-size:12px;font-weight:700">ONE SIZE FITS ALL</span>':`<label style="font-size:12px">Size<select style="display:block;padding:9px" onchange="editOutfit('${style}','size',this.value)">${Object.keys(SIZE_UPCHARGE).map(size=>`<option value="${size}" ${size===row.size?'selected':''}>${size}${SIZE_UPCHARGE[size]?' +'+money(SIZE_UPCHARGE[size]):''}</option>`).join('')}</select></label>`}<label style="font-size:12px">Quantity<input type="number" style="display:block;width:65px;padding:9px" min="1" max="${retailQtyCap()}" value="${row.qty}" onchange="editOutfit('${style}','qty',this.value)"></label></div>${addonRule(style).enabled?`<div style="margin-top:10px">${Object.keys(PRINTS).map(p=>`<label style="display:block;font-size:12px"><input type="checkbox" ${row.prints.includes(p)?'checked':''} onchange="editOutfit('${style}','print','${p}')">${p} +${money(addonRule(style).prices[p])}</label>`).join('')}</div>`:''}
@@ -716,10 +719,12 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     }
     let setQueue=[];
     function renderSetBuilder(){
+      if(!(adminSetMode&&manageUnlocked))return "";
       if(setQueue.length)return `<p class="section-note">Building your set: ${setQueue.length} garment${setQueue.length===1?"":"s"} remaining. Each item is priced separately.</p>`;
       return `<details style="margin-top:16px"><summary style="cursor:pointer;font-weight:800">Build your set · choose your garments</summary><p class="section-note">Same logo, your combination. Choose each garment’s color, size and quantity next. Standard garment prices apply.</p><div class="choices">${availableStyles(current).map(g=>`<label class="choice"><input type="checkbox" name="set-style" value="${g}"> ${g==="Tee"?"T-shirt":g}</label>`).join("")}</div><button class="choice" style="margin-top:10px" onclick="startGarmentSet()">CUSTOMIZE MY SET</button></details>`;
     }
     function startGarmentSet(){
+      if(!(adminSetMode&&manageUnlocked))return;
       const chosen=Array.from(document.querySelectorAll('input[name="set-style"]:checked')).map(el=>el.value);
       if(chosen.length<2){alert("Choose at least two garments, or use ADD TO BAG for one.");return;}
       setQueue=chosen;selection.qty=1;selection.prints=[];setStyle(setQueue[0]);
@@ -886,7 +891,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
     }
     function closeOverlay(id){
       document.getElementById(id).classList.remove("open");document.body.style.overflow=document.querySelector(".overlay.open")?"hidden":"";
-      if(id==="product-overlay"){setQueue=[];try{const url=new URL(window.location.href);url.searchParams.delete("product");history.replaceState(null,"",url);}catch(e){}}
+      if(id==="product-overlay"){adminSetMode=false;outfitDraft=null;setQueue=[];try{const url=new URL(window.location.href);url.searchParams.delete("product");history.replaceState(null,"",url);}catch(e){}}
     }
     const ADMIN_PIN="239367";
     let manageUnlocked=false;
@@ -989,12 +994,25 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
             <button class="choice ${manageView==='shipping'?'on':''}" onclick="switchManageView('shipping')">SHIPPING</button>
             <button class="choice ${manageView==='wholesale'?'on':''}" onclick="switchManageView('wholesale')">WHOLESALE</button>
             <button class="choice ${manageView==='hoodies'?'on':''}" onclick="switchManageView('hoodies')">HOODIES</button>
+            <button class="choice ${manageView==='sets'?'on':''}" onclick="switchManageView('sets')">BUILD A SET</button>
             <button class="choice ${manageView==='addons'?'on':''}" onclick="switchManageView('addons')">BUNDLES & ADD-ONS</button>
             <button class="choice ${manageView==='discounts'?'on':''}" onclick="switchManageView('discounts')">DISCOUNTS</button>
           </div>
         </details>
       </div>`;
-      body.innerHTML=tabs+(manageView==="designs"?renderQuickTeesTab():manageView==="inventory"?renderInventoryTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():manageView==="wholesale"?renderWholesaleTab():manageView==="hoodies"?renderHoodiesTab():manageView==="addons"?renderAddonAdmin():renderDiscountsTab());
+      body.innerHTML=tabs+(manageView==="designs"?renderQuickTeesTab():manageView==="inventory"?renderInventoryTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():manageView==="wholesale"?renderWholesaleTab():manageView==="hoodies"?renderHoodiesTab():manageView==="sets"?renderAdminSetTab():manageView==="addons"?renderAddonAdmin():renderDiscountsTab());
+    }
+    function renderAdminSetTab(){
+      return `<h3>BUILD A SET</h3><p class="section-note">Admin only. Choose a design to combine its enabled garments. The customer storefront shows T-shirts only.</p><div class="choices">${PRODUCTS.filter(p=>p.city===currentCity).map(p=>`<button class="choice" onclick="openAdminSet('${p.id}')">${escapeXml(p.name)}</button>`).join("")}</div>`;
+    }
+    function openAdminSet(productId){
+      if(!manageUnlocked)return;
+      const index=PRODUCTS.findIndex(p=>p.id===productId);if(index<0)return;
+      chooseProduct(index);
+      if(current!==PRODUCTS[index])return;
+      adminSetMode=true;outfitDraft=null;initOutfit();outfitBundleMode=true;
+      document.getElementById("manage-overlay").classList.remove("open");
+      renderProductModal();
     }
     function switchManageView(view){manageView=view;renderManageBody()}
     let activeQuickTeeId=null;
