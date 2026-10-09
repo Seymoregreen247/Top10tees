@@ -80,6 +80,13 @@
   <style id="clean-storefront-v2">
     /* Clean storefront refresh — product-first, less clutter, larger artwork */
     body{background:#f7f7f5;color:#151515}
+    /* Compact city-specific shopping identity; no extra image requests. */
+    .city-bar{background:#fff!important}
+    .brand-mark{background:var(--red)!important;border-radius:50%!important;outline-color:var(--red)!important;font-size:22px!important}
+    body[data-shop-city="detroit"] .brand-mark{background:var(--navy)!important;outline-color:var(--navy)!important}
+    body[data-shop-city="boston"] .cart-button{background:var(--red)!important}
+    body[data-shop-city="detroit"] .cart-button{background:var(--navy)!important}
+    .brand-sub{letter-spacing:1.1px!important;font-size:9px!important}
     .announcement{background:var(--red);color:#fff;font-size:11px;letter-spacing:1.6px;padding:9px 16px;text-align:center}
     .city-bar{background:#fff!important;border-bottom:2px solid var(--red);padding:14px 20px;position:sticky;top:0;z-index:30}
     .city-toggle{max-width:420px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:4px;border:1px solid var(--navy);border-radius:999px;padding:4px;background:#fff}
@@ -183,7 +190,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
   <div class="city-bar"><div class="city-toggle" id="city-toggle"></div></div>
   <div id="unlock-bar"></div>
   <header class="site-header">
-    <div class="brand"><div class="brand-mark">10</div><div><div class="brand-name">TOP 10 TEES</div></div></div>
+    <div class="brand"><div class="brand-mark" id="city-brand-mark" aria-hidden="true">3</div><div><div class="brand-name">TOP 10 TEES</div><div id="city-brand-caption" class="brand-sub">3 FOR THE STRIPES · BOSTON</div></div></div>
     <div style="display:flex;gap:10px;align-items:center">
     <button class="cart-button" type="button" onclick="openCart()">BAG <span class="cart-count" id="cart-count">0</span></button>
     </div>
@@ -500,6 +507,9 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
       const meta=CITY_META[currentCity];if(!meta)return;
       const badge=document.getElementById("hero-badge");if(badge)badge.textContent=meta.badge;
       const sub=document.getElementById("hero-sub");if(sub)sub.textContent=meta.sub;
+      document.body.dataset.shopCity=currentCity;
+      const mark=document.getElementById("city-brand-mark");if(mark)mark.textContent=currentCity==="boston"?"3":"D";
+      const caption=document.getElementById("city-brand-caption");if(caption)caption.textContent=currentCity==="boston"?"3 FOR THE STRIPES · BOSTON":"WHAT UP DOE · DETROIT";
 
     }
     function setCity(city){
