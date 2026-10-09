@@ -1563,7 +1563,7 @@ html{scrollbar-gutter:stable}body{overflow-x:hidden}
         const photos=await fetchLatestStoreData("photos");
         if(!photos||typeof photos!=="object")return;
         PHOTO_MAP=photos;
-        applyPhotos();
+        // refreshStorefront applies photos after both settings and photos finish.
       }catch(e){console.error("Could not load photos from Google Sheets",e);throw e}
     }
     async function uploadToGallery(input){
