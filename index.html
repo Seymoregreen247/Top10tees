@@ -208,6 +208,9 @@ body[data-shop-city="detroit"] .announcement{background:var(--navy)}
 body[data-shop-city="boston"] .city-bar{border-bottom-color:var(--red)}
 body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
 </style>
+<style>
+.sold-badge{display:inline-block;margin:8px 0 4px;padding:6px 10px;border-radius:999px;background:#edf3ed;color:#285932;font-size:12px;font-weight:800}
+</style>
 </head>
 <body>
   <div class="announcement">THE TOP 10 • BOSTON + DETROIT</div>
@@ -406,10 +409,9 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
     const BEANIE_PRICE=24.99;
     const LONG_SLEEVE_PRICE=34.99;
     const PRODUCT_STYLES=["Tee","Long Sleeve","Crew Neck","Hoodie","Beanie"];
-    // Launch phase: storefront sells tees only. Keep all styles editable in admin.
-    const STOREFRONT_STYLES=["Tee"];
+    // Each design starts with tees; admin can enable additional garments later.
     let adminSetMode=false;
-    function customerStyles(product){return adminSetMode&&manageUnlocked?availableStyles(product):STOREFRONT_STYLES.filter(style=>availableStyles(product).includes(style));}
+    function customerStyles(product){return availableStyles(product);}
     const ALL_HOODIE_COLORS=["Black","White","Gray","Navy","Red","Maroon","Olive","Charcoal"];
     const HOODIE_COLOR_HEX={Black:"#101418",White:"#ffffff",Gray:"#b6b6b6",Navy:"#1f2a44",Red:"#d71936",Maroon:"#6b1220",Olive:"#5b5a34",Charcoal:"#36393f"};
     let HOODIE_COLORS=["Black","Gray","Navy"];
@@ -557,7 +559,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
         const i=PRODUCTS.indexOf(p);
         const locked=isProductLocked(p);
         const cardOnClick=locked?`focusUnlockInput()`:`chooseProduct(${i})`;
-        return `<article class="product-card ${locked?'is-locked':''}" role="button" tabindex="0" aria-label="${locked?'Locked design':'Choose '+escapeXml(p.name)}" onclick="${cardOnClick}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${cardOnClick}}"><div class="rank">NO. ${String(displayI+1).padStart(2,"0")}</div>${locked?'':`<button class="share-btn" onclick="shareProduct(${i},event)" aria-label="Share ${escapeXml(p.name)}" title="Share">${shareIcon()}</button>`}<div class="art-wrap" oncontextmenu="return false"><img src="${productArt(p,i)}" alt="${escapeXml(p.name)}" loading="${displayI<2?'eager':'lazy'}" decoding="async" fetchpriority="${displayI<2?'high':'low'}" style="${locked?'filter:blur(14px) grayscale(60%);transform:scale(1.08)':''}">${locked?'':watermark()}${locked?'<div class=\"lock-overlay\"><div class=\"lock-icon\">&#128274;</div><div class=\"lock-label\">LOCKED DESIGN</div><div class=\"lock-sub\">Enter your code to unlock</div></div>':''}</div><div class="product-info"><div class="product-name">${locked?'???':escapeXml(p.name)}</div><div class="product-tag">${locked?'Exclusive Access Only':'WATERMARKED LOGO • '+escapeXml(p.tag)}</div><div class="product-bottom"><div class="price">${locked?'&nbsp;':`T-SHIRTS ${money(p.price)}`}</div><button class="choose" onclick="event.stopPropagation();${cardOnClick}">${locked?'Unlock':'View Styles'}</button></div></div></article>`;
+        return `<article class="product-card ${locked?'is-locked':''}" role="button" tabindex="0" aria-label="${locked?'Locked design':'Choose '+escapeXml(p.name)}" onclick="${cardOnClick}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${cardOnClick}}"><div class="rank">NO. ${String(displayI+1).padStart(2,"0")}</div>${locked?'':`<button class="share-btn" onclick="shareProduct(${i},event)" aria-label="Share ${escapeXml(p.name)}" title="Share">${shareIcon()}</button>`}<div class="art-wrap" oncontextmenu="return false"><img src="${productArt(p,i)}" alt="${escapeXml(p.name)}" loading="${displayI<2?'eager':'lazy'}" decoding="async" fetchpriority="${displayI<2?'high':'low'}" style="${locked?'filter:blur(14px) grayscale(60%);transform:scale(1.08)':''}">${locked?'':watermark()}${locked?'<div class=\"lock-overlay\"><div class=\"lock-icon\">&#128274;</div><div class=\"lock-label\">LOCKED DESIGN</div><div class=\"lock-sub\">Enter your code to unlock</div></div>':''}</div><div class="product-info"><div class="product-name">${locked?'???':escapeXml(p.name)}</div>${locked?'':soldBadge(p)}<div class="product-tag">${locked?'Exclusive Access Only':'WATERMARKED LOGO • '+escapeXml(p.tag)}</div><div class="product-bottom"><div class="price">${locked?'&nbsp;':`T-SHIRTS ${money(p.price)}`}</div><button class="choose" onclick="event.stopPropagation();${cardOnClick}">${locked?'Unlock':'View Styles'}</button></div></div></article>`;
       }).join("");
       renderCityToggle();renderCityChrome();renderUnlockBar();
     }
@@ -721,7 +723,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
       const pieces=items.reduce((n,item)=>n+item.qty,0);
       const mainImage=productArt(current,PRODUCTS.indexOf(current));
       const style=activeOutfitStyle,row=outfitDraft.rows[style];
-      document.getElementById("product-modal-body").innerHTML=`<h3 style="margin:0 0 12px;color:var(--navy)">${escapeXml(current.name)}</h3>
+      document.getElementById("product-modal-body").innerHTML=`<h3 style="margin:0 0 12px;color:var(--navy)">${escapeXml(current.name)}</h3>${soldBadge(current)}
       <div class="focused-garment-preview modal-art" onclick="zoomActiveOutfit()"><img src="${garmentPreview(current,style,row.color,PRODUCTS.indexOf(current))}" alt="${escapeXml(current.name)} — ${style}">${watermark()}<div class="zoom-hint">TAP TO ZOOM</div></div>
       ${adminSetMode&&manageUnlocked?`<div class="outfit-mode-switch"><button class="choice ${!outfitBundleMode?'on':''}" onclick="setOutfitMode(false)">ONE GARMENT</button><button class="choice ${outfitBundleMode?'on':''}" onclick="setOutfitMode(true)">BUILD A SET</button></div>`:''}
       <div class="choice-title">CHOOSE YOUR GARMENT</div><div class="focused-style-choices">${customerStyles(current).map(g=>`<button class="choice ${g===style?'on':''}" onclick="selectOutfitStyle('${g}')"><img src="${garmentPreview(current,g,outfitDraft.rows[g].color,PRODUCTS.indexOf(current))}" alt="" style="width:64px;height:58px;object-fit:contain;display:block;margin:0 auto 4px"><span>${g==='Tee'?'T-shirt':g}</span><small style="display:block">${money(stylePrice(current,g))}</small></button>`).join('')}</div>
@@ -921,10 +923,51 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
           const items=cart.map(i=>({name:i.name,sku:i.productId,unit_amount:{currency_code:CURRENCY,value:(i.total/i.qty).toFixed(2)},quantity:String(i.qty),description:`${i.garment}, ${i.color}, Size ${i.size}`}));
           return actions.order.create({purchase_units:[{description:"Top 10 Tees",amount:{currency_code:CURRENCY,value:grandTotal().toFixed(2),breakdown:{item_total:{currency_code:CURRENCY,value:subtotal().toFixed(2)},shipping:{currency_code:CURRENCY,value:shippingFee().toFixed(2)},discount:{currency_code:CURRENCY,value:discountAmount().toFixed(2)}}},items}]});
         },
-        onApprove(data,actions){return actions.order.capture().then(details=>{if(details.status!=="COMPLETED")throw new Error("Payment was not completed");decrementInventory(cart);sendOrderToSheet(details.id);saveSettings();cart=[];appliedDiscount=null;outfitDraft=null;updateCartCount();showSuccess(details.id)})},
+        onApprove(data,actions){return actions.order.capture().then(details=>{if(details.status!=="COMPLETED")throw new Error("Payment was not completed");recordCompletedSale(details.id,cart);decrementInventory(cart);sendOrderToSheet(details.id);saveSettings();cart=[];appliedDiscount=null;outfitDraft=null;updateCartCount();showSuccess(details.id)})},
         onCancel(){alert("Payment was cancelled. Your bag is still here.")},
         onError(err){console.error(err);alert("PayPal could not complete the payment. No order has been marked paid. Please try again.")}
       }).render("#paypal-button-container").then(()=>{document.getElementById("paypal-placeholder")?.classList.add("hidden");}).catch(err=>{console.error(err);const el=document.getElementById("paypal-placeholder");if(el){el.classList.remove("hidden");el.textContent="Payment options could not load. Please reconnect and try again.";}});
+    }
+    let priorSold={};
+    const PENDING_SALES_KEY="t10t_pending_paid_sales_v1";
+    let pendingPaidSales={};
+    try{const saved=JSON.parse(localStorage.getItem(PENDING_SALES_KEY)||"{}");if(saved&&typeof saved==="object"&&!Array.isArray(saved))pendingPaidSales=saved;}catch(e){}
+    function soldUnits(product){
+      let count=Number.isSafeInteger(priorSold[product.id])&&priorSold[product.id]>=0?priorSold[product.id]:0;
+      Object.entries(PHOTO_MAP).forEach(([key,value])=>{
+        if(!key.startsWith("sale::"))return;
+        try{const sale=JSON.parse(value);const qty=sale.units&&sale.units[product.id];if(sale.orderId===key.slice(6)&&Number.isSafeInteger(qty)&&qty>0)count+=qty;}catch(e){}
+      });
+      return count;
+    }
+    function soldBadge(product){
+      const count=soldUnits(product);
+      return count>0?`<div class="sold-badge">${count.toLocaleString()} sold</div>`:"";
+    }
+    function persistPendingSales(){try{localStorage.setItem(PENDING_SALES_KEY,JSON.stringify(pendingPaidSales));}catch(e){}}
+    function recordCompletedSale(orderId,items){
+      if(!orderId)return;
+      const units={};
+      items.forEach(item=>{if(PRODUCTS.some(p=>p.id===item.productId)&&Number.isSafeInteger(item.qty)&&item.qty>0)units[item.productId]=(units[item.productId]||0)+item.qty;});
+      if(!Object.keys(units).length)return;
+      const sale={orderId:String(orderId),units};
+      pendingPaidSales[sale.orderId]=sale;persistPendingSales();
+      syncPendingSales();
+    }
+    let salesSyncPromise=null;
+    function syncPendingSales(){
+      if(salesSyncPromise)return salesSyncPromise;
+      salesSyncPromise=(async()=>{
+        for(const [orderId,sale] of Object.entries(pendingPaidSales)){
+          if(!sale||sale.orderId!==orderId||!sale.units)continue;
+          const data=JSON.stringify(sale),key="sale::"+orderId;
+          // One record per paid order makes duplicate callbacks/retries count once.
+          if(PHOTO_MAP[key]===data||await savePhoto(key,data)){
+            delete pendingPaidSales[orderId];persistPendingSales();renderProducts();
+          }
+        }
+      })().catch(e=>console.error("Sales count sync pending",e)).finally(()=>{salesSyncPromise=null;});
+      return salesSyncPromise;
     }
     function decrementInventory(items){
       items.forEach(i=>{
@@ -1075,7 +1118,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
       body.innerHTML=tabs+(manageView==="designs"?renderQuickTeesTab():manageView==="inventory"?renderInventoryTab():manageView==="gallery"?renderGalleryTab():manageView==="shipping"?renderShippingTab():manageView==="wholesale"?renderWholesaleTab():manageView==="hoodies"?renderHoodiesTab():manageView==="sets"?renderAdminSetTab():manageView==="addons"?renderAddonAdmin():renderDiscountsTab());
     }
     function renderAdminSetTab(){
-      return `<h3>BUILD A SET</h3><p class="section-note">Admin only. Choose a design to combine its enabled garments. The customer storefront shows T-shirts only.</p><div class="choices">${PRODUCTS.filter(p=>p.city===currentCity).map(p=>`<button class="choice" onclick="openAdminSet('${p.id}')">${escapeXml(p.name)}</button>`).join("")}</div>`;
+      return `<h3>BUILD A SET</h3><p class="section-note">Admin only. Choose a design to combine its enabled garments. Customers see only the garments you enable for each design.</p><div class="choices">${PRODUCTS.filter(p=>p.city===currentCity).map(p=>`<button class="choice" onclick="openAdminSet('${p.id}')">${escapeXml(p.name)}</button>`).join("")}</div>`;
     }
     function openAdminSet(productId){
       if(!manageUnlocked)return;
@@ -1095,6 +1138,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
         ${Object.keys(CITY_META).map(c=>`<button class="choice ${city===c?'on':''}" onclick="activeQuickTeeId=null;currentCity='${c}';renderManageBody()" style="flex:1;padding:12px">${CITY_META[c].label.toUpperCase()}</button>`).join("")}
       </div>
       ${renderProductOrderControls(city)}
+      <details style="border:1px solid var(--line);padding:12px;margin-bottom:16px"><summary style="cursor:pointer;font-weight:800">DESIGN SALES — ${CITY_META[city].label.toUpperCase()}</summary><p class="section-note">Units sold across all garments for each design. Completed PayPal purchases update automatically. Add actual prior or offline sales in each design editor; do not include orders already counted online.</p>${[...list].sort((a,b)=>soldUnits(b)-soldUnits(a)).map(p=>`<button class="choice" style="display:flex;width:100%;justify-content:space-between;gap:12px;margin-top:7px;text-align:left" onclick="openQuickTee('${p.id}')"><span>${escapeXml(p.name)}</span><b>${soldUnits(p).toLocaleString()} sold</b></button>`).join("")}</details>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:18px">
         ${list.map((p,i)=>`<button class="choice" onclick="openQuickTee('${p.id}')" style="padding:11px 4px">#${i+1}</button>`).join("")}
       </div>
@@ -1123,6 +1167,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
         </div>
         <div class="field"><label>DESIGN NAME</label><input id="name-input-${p.id}" value="${escapeXml(p.name)}"></div>
         <div class="field"><label>T-SHIRT PRICE</label><input id="price-input-${p.id}" type="number" min="0" step=".5" value="${p.price}"></div>
+        <div class="field"><label>SALES — ${soldUnits(p).toLocaleString()} TOTAL UNITS SOLD</label><label for="prior-sold-${p.id}" style="letter-spacing:0;font-size:11px">Actual prior / offline units sold</label><input id="prior-sold-${p.id}" type="number" min="0" step="1" value="${priorSold[p.id]||0}"><small style="display:block;line-height:1.5;margin-top:6px">Completed online purchases are counted separately. Enter only real sales not already counted online. The public badge appears after the first sale.</small></div>
         <div class="field"><label>SHORT DESCRIPTION (OPTIONAL)</label><input id="desc-input-${p.id}" value="${escapeXml(p.description||'')}"></div>
         <div style="font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted);margin:14px 0 8px">AVAILABLE COLORS</div>
         <div style="display:flex;gap:7px;flex-wrap:wrap">${COLORS.map(c=>`<label class="choice" style="display:flex;align-items:center;gap:5px"><input type="checkbox" ${(p.colors||COLORS).includes(c)?'checked':''} onchange="quickToggleColor('${p.id}','${c}',this)">${c}</label>`).join("")}</div>
@@ -1180,6 +1225,8 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
       const p=PRODUCTS.find(x=>x.id===id);if(!p)return;
       const n=document.getElementById("name-input-"+id),pr=document.getElementById("price-input-"+id),d=document.getElementById("desc-input-"+id);
       if(n)p.name=n.value.trim()||p.name;if(pr)p.price=Math.max(0,parseFloat(pr.value)||0);if(d)p.description=d.value.trim();
+      const soldInput=document.getElementById("prior-sold-"+id);
+      if(soldInput){const qty=Number(soldInput.value);if(!soldInput.value.trim()||!Number.isSafeInteger(qty)||qty<0){const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Enter a whole number of actual prior / offline units sold, zero or more.";return;}priorSold[id]=qty;}
       p.stylePrices=p.stylePrices||{};
       ["Long Sleeve","Hoodie","Crew Neck","Beanie"].forEach(g=>{const el=document.getElementById("style-price-"+p.id+"-"+g.replace(/ /g,"-"));if(el)p.stylePrices[g]=Math.max(0,parseFloat(el.value)||0);});
       const msg=document.getElementById("quick-save-msg");if(msg)msg.textContent="Saving & publishing…";
@@ -1788,6 +1835,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
     async function saveSettings(){
       if(GOOGLE_SHEETS_WEBHOOK_URL.includes("PASTE_YOUR"))return false;
       const settings={
+        priorSold,
         bundlePercent:BUNDLE_PERCENT,
         printAddonRules,
         productOrder:PRODUCTS.map(p=>p.id),
@@ -1826,6 +1874,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
         const settings=await fetchLatestStoreData("settings");
         if(!settings||typeof settings!=="object"||Array.isArray(settings))return;
         settingsBaseline=JSON.parse(JSON.stringify(settings));
+        priorSold=settings.priorSold&&typeof settings.priorSold==="object"&&!Array.isArray(settings.priorSold)?settings.priorSold:{};
         if(!Object.keys(settings).length)return;
         if(typeof settings.bundlePercent==="number"&&settings.bundlePercent>=0&&settings.bundlePercent<=30)BUNDLE_PERCENT=settings.bundlePercent;
         printAddonRules=settings.printAddonRules&&typeof settings.printAddonRules==="object"&&!Array.isArray(settings.printAddonRules)?settings.printAddonRules:{};
@@ -1919,6 +1968,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
           storefrontReady=true;
           restoreBag();renderProducts();updateCartCount();writeCache();
           openSharedProductFromUrl();
+          syncPendingSales();
         }catch(e){
           stopCollectionCountdown();collectionIntroActive=false;
           console.error("Store refresh failed",e);
