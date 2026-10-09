@@ -214,7 +214,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
   <div class="city-bar"><div class="city-toggle" id="city-toggle"></div></div>
   <div id="unlock-bar"></div>
   <header class="site-header">
-    <div class="brand"><div class="brand-mark" id="city-brand-mark" aria-hidden="true">3</div><div><div class="brand-name">TOP 10 TEES</div><div id="city-brand-caption" class="brand-sub">3 FOR THE STRIPES · BOSTON</div></div></div>
+    <div class="brand"><div class="brand-mark" id="city-brand-mark" aria-hidden="true">B</div><div><div class="brand-name">TOP 10 TEES</div><div id="city-brand-caption" class="brand-sub">3 FOR THE STRIPES · BOSTON</div></div></div>
     <div style="display:flex;gap:10px;align-items:center">
     <button class="cart-button" type="button" onclick="openCart()">BAG <span class="cart-count" id="cart-count">0</span></button>
     </div>
@@ -504,10 +504,22 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
       return (base+sizeUp+printUp)*selection.qty;
     }
 
+    const COLLECTION_INTRO_KEY="t10t_collection_intro_seen_v1";
+    let collectionIntroAttempted=false;
+    let collectionIntroActive=false;
+    function shouldShowCollectionIntro(){
+      if(collectionIntroAttempted)return false;
+      collectionIntroAttempted=true;
+      let seen=false;
+      try{seen=localStorage.getItem(COLLECTION_INTRO_KEY)==="1"||!!localStorage.getItem("t10t_store_v1");localStorage.setItem(COLLECTION_INTRO_KEY,"1");}catch(e){}
+      try{seen=seen||sessionStorage.getItem(COLLECTION_INTRO_KEY)==="1";sessionStorage.setItem(COLLECTION_INTRO_KEY,"1");}catch(e){}
+      return !seen;
+    }
     let collectionCountdownValue=5;
     let collectionCountdownTimer=null;
     let finishCollectionCountdown=null;
     function renderCollectionCountdown(){
+      if(!collectionIntroActive)return '<div role="status" aria-live="polite" style="grid-column:1/-1;padding:32px;text-align:center">Loading your T-shirts…</div>';
       return `<div class="collection-countdown" role="status" aria-live="polite"><div class="countdown-kicker">TOP 10 TEES</div><h3>Are you ready for the latest?</h3><div id="collection-countdown-number" class="countdown-number">${collectionCountdownValue||""}</div><p id="collection-countdown-copy">${collectionCountdownValue?"Your next favorite tee is coming…":"Almost here — loading the latest tees…"}</p></div>`;
     }
     function stopCollectionCountdown(){
@@ -569,7 +581,7 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
       const badge=document.getElementById("hero-badge");if(badge)badge.textContent=meta.badge;
       const sub=document.getElementById("hero-sub");if(sub)sub.textContent=meta.sub;
       document.body.dataset.shopCity=currentCity;
-      const mark=document.getElementById("city-brand-mark");if(mark)mark.textContent=currentCity==="boston"?"3":"D";
+      const mark=document.getElementById("city-brand-mark");if(mark)mark.textContent=currentCity==="boston"?"B":"D";
       const caption=document.getElementById("city-brand-caption");if(caption)caption.textContent=currentCity==="boston"?"3 FOR THE STRIPES · BOSTON":"WHAT UP DOE · DETROIT";
 
     }
@@ -1893,8 +1905,9 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
     let storefrontRefreshPromise=null;
     function refreshStorefront(){
       if(storefrontRefreshPromise)return storefrontRefreshPromise;
-      const countdown=startCollectionCountdown();
-      storefrontReady=false;storefrontLoadError=false;renderProducts();
+      collectionIntroActive=shouldShowCollectionIntro();
+      const countdown=collectionIntroActive?startCollectionCountdown():Promise.resolve();
+      storefrontLoadError=false;renderProducts();
       storefrontRefreshPromise=(async()=>{
         try{
           // Fetch in parallel, but apply photos only after settings are ready.
@@ -1902,11 +1915,12 @@ body[data-shop-city="detroit"] .city-bar{border-bottom-color:var(--navy)}
           if(results.some(result=>result.status==="rejected"))throw new Error("Latest collection unavailable");
           applyPhotos();
           await countdown;
+          collectionIntroActive=false;
           storefrontReady=true;
           restoreBag();renderProducts();updateCartCount();writeCache();
           openSharedProductFromUrl();
         }catch(e){
-          stopCollectionCountdown();
+          stopCollectionCountdown();collectionIntroActive=false;
           console.error("Store refresh failed",e);
           storefrontLoadError=true;renderProducts();
         }finally{storefrontRefreshPromise=null;}
